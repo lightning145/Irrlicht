@@ -23,6 +23,10 @@
 #include "CLimitReadFile.h"
 #include "irrList.h"
 
+#if defined (__STRICT_ANSI__)
+    #error Compiling with __STRICT_ANSI__ not supported. g++ does set this when compiling with -std=c++11 or -std=c++0x. Use instead -std=gnu++11 or -std=gnu++0x. Or use -U__STRICT_ANSI__ to disable strict ansi.
+#endif
+
 #if defined (_IRR_WINDOWS_API_)
 	#if !defined ( _WIN32_WCE )
 		#include <direct.h> // for _chdir
@@ -105,6 +109,9 @@ CFileSystem::~CFileSystem()
 //! opens a file for read access
 IReadFile* CFileSystem::createAndOpenFile(const io::path& filename)
 {
+	if ( filename.empty() )
+		return 0;
+
 	IReadFile* file = 0;
 	u32 i;
 
@@ -607,6 +614,8 @@ bool CFileSystem::changeWorkingDirectoryTo(const io::path& newDirectory)
 
 io::path CFileSystem::getAbsolutePath(const io::path& filename) const
 {
+	if ( filename.empty() )
+		return filename;
 #if defined(_IRR_WINDOWS_CE_PLATFORM_)
 	return filename;
 #elif defined(_IRR_WINDOWS_API_)
@@ -1075,4 +1084,3 @@ IAttributes* CFileSystem::createEmptyAttributes(video::IVideoDriver* driver)
 
 } // end namespace irr
 } // end namespace io
-

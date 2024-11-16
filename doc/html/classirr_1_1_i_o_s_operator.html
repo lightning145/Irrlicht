@@ -115,8 +115,8 @@ Public Member Functions</h2>
 <dl class="el"><dd class="mdescRight">Copies text to the clipboard.  <a href="#aba3b621ed3b64e5a421c42b06b49e0b6"></a><br/></dl><li>virtual const <a class="el" href="namespaceirr_1_1core.html#ade1071a878633f2f6d8a75c5d11fec19">core::stringc</a> &amp; <a class="el" href="classirr_1_1_i_o_s_operator.html#acf89b7715468ad2af91807dea6d40bf8">getOperatingSystemVersion</a> () const =0
 <dl class="el"><dd class="mdescRight">Get the current operation system version as string.  <a href="#acf89b7715468ad2af91807dea6d40bf8"></a><br/></dl><li>_IRR_DEPRECATED_ const wchar_t * <a class="el" href="classirr_1_1_i_o_s_operator.html#a213ace1e7332bf2b08e5c8245784cb0e">getOperationSystemVersion</a> () const 
 <dl class="el"><dd class="mdescRight">Get the current operation system version as string.  <a href="#a213ace1e7332bf2b08e5c8245784cb0e"></a><br/></dl><li>virtual bool <a class="el" href="classirr_1_1_i_o_s_operator.html#abc61b8016ec35125ef94adea42209ecd">getProcessorSpeedMHz</a> (<a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> *MHz) const =0
-<dl class="el"><dd class="mdescRight">Get the processor speed in megahertz.  <a href="#abc61b8016ec35125ef94adea42209ecd"></a><br/></dl><li>virtual bool <a class="el" href="classirr_1_1_i_o_s_operator.html#af58b50cecf28f247e1f302ee0b9e8270">getSystemMemory</a> (<a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> *Total, <a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> *Avail) const =0
-<dl class="el"><dd class="mdescRight">Get the total and available system RAM.  <a href="#af58b50cecf28f247e1f302ee0b9e8270"></a><br/></dl><li>virtual const <a class="el" href="namespaceirr.html#a9395eaea339bcb546b319e9c96bf7410">c8</a> * <a class="el" href="classirr_1_1_i_o_s_operator.html#a9026ff9f28b48615971e18fcee6fff4c">getTextFromClipboard</a> () const =0
+<dl class="el"><dd class="mdescRight">Get the processor speed in megahertz.  <a href="#abc61b8016ec35125ef94adea42209ecd"></a><br/></dl><li>virtual bool <a class="el" href="classirr_1_1_i_o_s_operator.html#a15a49f9e3109b1e3f0a7f47a1daa9b61">getSystemMemory</a> (<a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> *totalBytes, <a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> *availableBytes) const =0
+<dl class="el"><dd class="mdescRight">Get the total and available system RAM.  <a href="#a15a49f9e3109b1e3f0a7f47a1daa9b61"></a><br/></dl><li>virtual const <a class="el" href="namespaceirr.html#a9395eaea339bcb546b319e9c96bf7410">c8</a> * <a class="el" href="classirr_1_1_i_o_s_operator.html#a9026ff9f28b48615971e18fcee6fff4c">getTextFromClipboard</a> () const =0
 <dl class="el"><dd class="mdescRight">Get text from the clipboard.  <a href="#a9026ff9f28b48615971e18fcee6fff4c"></a><br/></dl></ul>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
 <div class="textblock"><p>The Operating system operator provides operation system specific methods and informations. </p>
@@ -211,7 +211,7 @@ Public Member Functions</h2>
 
 </div>
 </div>
-<a class="anchor" id="af58b50cecf28f247e1f302ee0b9e8270"></a><!-- doxytag: member="irr::IOSOperator::getSystemMemory" ref="af58b50cecf28f247e1f302ee0b9e8270" args="(u32 *Total, u32 *Avail) const =0" -->
+<a class="anchor" id="a15a49f9e3109b1e3f0a7f47a1daa9b61"></a><!-- doxytag: member="irr::IOSOperator::getSystemMemory" ref="a15a49f9e3109b1e3f0a7f47a1daa9b61" args="(u32 *totalBytes, u32 *availableBytes) const =0" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -219,13 +219,13 @@ Public Member Functions</h2>
           <td class="memname">virtual bool irr::IOSOperator::getSystemMemory </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> *&#160;</td>
-          <td class="paramname"><em>Total</em>, </td>
+          <td class="paramname"><em>totalBytes</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> *&#160;</td>
-          <td class="paramname"><em>Avail</em>&#160;</td>
+          <td class="paramname"><em>availableBytes</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -239,8 +239,8 @@ Public Member Functions</h2>
 <p>Get the total and available system RAM. </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table class="params">
-    <tr><td class="paramname">Total,:</td><td>will contain the total system memory </td></tr>
-    <tr><td class="paramname">Avail,:</td><td>will contain the available memory </td></tr>
+    <tr><td class="paramname">totalBytes,:</td><td>will contain the total system memory in bytes </td></tr>
+    <tr><td class="paramname">availableBytes,:</td><td>will contain the available memory in bytes </td></tr>
   </table>
   </dd>
 </dl>
@@ -293,7 +293,7 @@ Public Member Functions</h2>
 
     <li class="footer">
 <a href="http://irrlicht.sourceforge.net" target="_blank">Irrlicht 
-Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Sun Nov 17 2013 20:18:42 for Irrlicht 3D Engine by
+Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Fri Mar 12 2021 17:21:57 for Irrlicht 3D Engine by
 <a href="http://www.doxygen.org/index.html" target="_blank">Doxygen</a> 1.7.5.1 </li>
    </ul>
  </div>

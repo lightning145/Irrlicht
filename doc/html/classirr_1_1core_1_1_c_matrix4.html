@@ -189,8 +189,8 @@ Public Member Functions</h2>
 <dl class="el"><dd class="mdescRight">Set texture transformation scale, and recenter at (0.5,0.5)  <a href="#adbd668867d117dc9331e68abef0af221"></a><br/></dl><li><a class="el" href="classirr_1_1core_1_1_c_matrix4.html">CMatrix4</a>&lt; T &gt; &amp; <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a2bab9633697a892f08d89c7aeee6daf6">setTextureTranslate</a> (<a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> x, <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> y)
 <dl class="el"><dd class="mdescRight">Set texture transformation translation.  <a href="#a2bab9633697a892f08d89c7aeee6daf6"></a><br/></dl><li><a class="el" href="classirr_1_1core_1_1_c_matrix4.html">CMatrix4</a>&lt; T &gt; &amp; <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a7d999210cc7427e9d744271e50d26c3c">setTextureTranslateTransposed</a> (<a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> x, <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> y)
 <dl class="el"><dd class="mdescRight">Set texture transformation translation, using a transposed representation.  <a href="#a7d999210cc7427e9d744271e50d26c3c"></a><br/></dl><li><a class="el" href="classirr_1_1core_1_1_c_matrix4.html">CMatrix4</a>&lt; T &gt; &amp; <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#ac04a3b341cbfbb7986be682691655622">setTranslation</a> (const <a class="el" href="classirr_1_1core_1_1vector3d.html">vector3d</a>&lt; T &gt; &amp;translation)
-<dl class="el"><dd class="mdescRight">Set the translation of the current matrix. Will erase any previous values.  <a href="#ac04a3b341cbfbb7986be682691655622"></a><br/></dl><li>void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#ac12468d698fbf6cd545e8b3fbf2a0042">transformBox</a> (<a class="el" href="classirr_1_1core_1_1aabbox3d.html">core::aabbox3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;box) const 
-<dl class="el"><dd class="mdescRight">Transforms a axis aligned bounding box.  <a href="#ac12468d698fbf6cd545e8b3fbf2a0042"></a><br/></dl><li>void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a87451aea9c07b71d1a8b6091b8cefa63">transformBoxEx</a> (<a class="el" href="classirr_1_1core_1_1aabbox3d.html">core::aabbox3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;box) const 
+<dl class="el"><dd class="mdescRight">Set the translation of the current matrix. Will erase any previous values.  <a href="#ac04a3b341cbfbb7986be682691655622"></a><br/></dl><li>void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#abc1f9e77f36b71f14ad9fd31bbce5680">transformBox</a> (<a class="el" href="classirr_1_1core_1_1aabbox3d.html">core::aabbox3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;box) const 
+<dl class="el"><dd class="mdescRight">Transforms a axis aligned bounding box.  <a href="#abc1f9e77f36b71f14ad9fd31bbce5680"></a><br/></dl><li>void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a87451aea9c07b71d1a8b6091b8cefa63">transformBoxEx</a> (<a class="el" href="classirr_1_1core_1_1aabbox3d.html">core::aabbox3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;box) const 
 <dl class="el"><dd class="mdescRight">Transforms a axis aligned bounding box.  <a href="#a87451aea9c07b71d1a8b6091b8cefa63"></a><br/></dl><li>void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#ac4f0d4156d573d8b73eb51dce76e094e">transformPlane</a> (<a class="el" href="classirr_1_1core_1_1plane3d.html">core::plane3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;plane) const 
 <dl class="el"><dd class="mdescRight">Transforms a plane by this matrix.  <a href="#ac4f0d4156d573d8b73eb51dce76e094e"></a><br/></dl><li>void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a949042276c2025189cc568c8080d7579">transformPlane</a> (const <a class="el" href="classirr_1_1core_1_1plane3d.html">core::plane3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;in, <a class="el" href="classirr_1_1core_1_1plane3d.html">core::plane3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;out) const 
 <dl class="el"><dd class="mdescRight">Transforms a plane by this matrix.  <a href="#a949042276c2025189cc568c8080d7579"></a><br/></dl><li>void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a82b910d8a4116a7455167dfa62fc4d72">transformVec3</a> (T *out, const T *in) const 
@@ -311,7 +311,7 @@ template&lt;class T &gt; </div>
 
 <p>Definition at line <a class="el" href="matrix4_8h_source.html#l00440">440</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
-<p>References <a class="el" href="matrix4_8h_source.html#l01307">irr::core::CMatrix4&lt; T &gt;::getInverse()</a>, and <a class="el" href="matrix4_8h_source.html#l01874">irr::core::CMatrix4&lt; T &gt;::getTransposed()</a>.</p>
+<p>References <a class="el" href="matrix4_8h_source.html#l01309">irr::core::CMatrix4&lt; T &gt;::getInverse()</a>, and <a class="el" href="matrix4_8h_source.html#l01876">irr::core::CMatrix4&lt; T &gt;::getTransposed()</a>.</p>
 
 </div>
 </div>
@@ -378,7 +378,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01990">1990</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01992">1992</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector3d_8h_source.html#l00147">irr::core::vector3d&lt; T &gt;::crossProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00125">irr::core::vector3d&lt; T &gt;::dotProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00168">irr::core::vector3d&lt; T &gt;::normalize()</a>, <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -419,7 +419,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a left-handed look-at matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01775">1775</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01777">1777</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector3d_8h_source.html#l00147">irr::core::vector3d&lt; T &gt;::crossProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00125">irr::core::vector3d&lt; T &gt;::dotProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00168">irr::core::vector3d&lt; T &gt;::normalize()</a>, <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -460,7 +460,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a right-handed look-at matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01816">1816</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01818">1818</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector3d_8h_source.html#l00147">irr::core::vector3d&lt; T &gt;::crossProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00125">irr::core::vector3d&lt; T &gt;::dotProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00168">irr::core::vector3d&lt; T &gt;::normalize()</a>, <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -496,7 +496,7 @@ template&lt;class T &gt; </div>
 <p>Builds a matrix which transforms a normalized Device Coordinate to Device Coordinates. </p>
 <p>Used to scale &lt;-1,-1&gt;&lt;1,1&gt; to viewport, for example from &lt;-1,-1&gt; &lt;1,1&gt; to the viewport &lt;0,0&gt;&lt;0,640&gt; </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01913">1913</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01915">1915</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="rect_8h_source.html#l00190">irr::core::rect&lt; T &gt;::getHeight()</a>, <a class="el" href="rect_8h_source.html#l00184">irr::core::rect&lt; T &gt;::getWidth()</a>, <a class="el" href="rect_8h_source.html#l00267">irr::core::rect&lt; T &gt;::LowerRightCorner</a>, and <a class="el" href="rect_8h_source.html#l00265">irr::core::rect&lt; T &gt;::UpperLeftCorner</a>.</p>
 
@@ -543,7 +543,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a left-handed orthogonal projection matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01604">1604</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01606">1606</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_types_8h_source.html#l00178">_IRR_DEBUG_BREAK_IF</a>.</p>
 
@@ -590,7 +590,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a right-handed orthogonal projection matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01639">1639</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01641">1641</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_types_8h_source.html#l00178">_IRR_DEBUG_BREAK_IF</a>.</p>
 
@@ -637,7 +637,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a left-handed perspective projection matrix based on a field of view, with far plane at infinity. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01568">1568</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01570">1570</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_types_8h_source.html#l00178">_IRR_DEBUG_BREAK_IF</a>, and <a class="el" href="irr_math_8h_source.html#l00535">irr::core::reciprocal()</a>.</p>
 
@@ -684,7 +684,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a left-handed perspective projection matrix based on a field of view. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01531">1531</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01533">1533</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_types_8h_source.html#l00178">_IRR_DEBUG_BREAK_IF</a>, and <a class="el" href="irr_math_8h_source.html#l00535">irr::core::reciprocal()</a>.</p>
 
@@ -731,7 +731,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a right-handed perspective projection matrix based on a field of view. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01492">1492</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01494">1494</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_types_8h_source.html#l00178">_IRR_DEBUG_BREAK_IF</a>, and <a class="el" href="irr_math_8h_source.html#l00535">irr::core::reciprocal()</a>.</p>
 
@@ -778,7 +778,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a left-handed perspective projection matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01709">1709</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01711">1711</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_types_8h_source.html#l00178">_IRR_DEBUG_BREAK_IF</a>.</p>
 
@@ -825,7 +825,7 @@ template&lt;class T &gt; </div>
 
 <p>Builds a right-handed perspective projection matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01674">1674</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01676">1676</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_types_8h_source.html#l00178">_IRR_DEBUG_BREAK_IF</a>.</p>
 
@@ -870,7 +870,7 @@ template&lt;class T &gt; </div>
 </dl>
 <p><a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/index.htm">http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/index.htm</a> </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01934">1934</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01936">1936</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector3d_8h_source.html#l00147">irr::core::vector3d&lt; T &gt;::crossProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00125">irr::core::vector3d&lt; T &gt;::dotProduct()</a>, <a class="el" href="vector3d_8h_source.html#l00168">irr::core::vector3d&lt; T &gt;::normalize()</a>, <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -919,7 +919,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01743">1743</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01745">1745</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="plane3d_8h_source.html#l00231">irr::core::plane3d&lt; T &gt;::D</a>, <a class="el" href="vector3d_8h_source.html#l00125">irr::core::vector3d&lt; T &gt;::dotProduct()</a>, <a class="el" href="plane3d_8h_source.html#l00228">irr::core::plane3d&lt; T &gt;::Normal</a>, <a class="el" href="vector3d_8h_source.html#l00168">irr::core::vector3d&lt; T &gt;::normalize()</a>, <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -967,7 +967,7 @@ template&lt;class T &gt; </div>
 <p>Set to a texture transformation matrix with the given parameters. </p>
 <p>Generate texture coordinates as linear functions so that: u = Ux*x + Uy*y + Uz*z + Uw v = Vx*x + Vy*y + Vz*z + Vw The matrix M for this case is: Ux Vx 0 0 Uy Vy 0 0 Uz Vz 0 0 Uw Vw 0 0 </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02065">2065</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02067">2067</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector2d_8h_source.html#l00316">irr::core::vector2d&lt; T &gt;::X</a>, and <a class="el" href="vector2d_8h_source.html#l00319">irr::core::vector2d&lt; T &gt;::Y</a>.</p>
 
@@ -1002,7 +1002,7 @@ template&lt;class T &gt; </div>
 
 <p>Compare two matrices using the equal method. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02210">2210</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02212">2212</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_math_8h_source.html#l00185">irr::core::equals()</a>.</p>
 
@@ -1026,7 +1026,7 @@ template&lt;class T &gt; </div>
 
 <p>Gets if the matrix is definitely identity matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02198">2198</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02200">2200</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1057,7 +1057,7 @@ template&lt;class T &gt; </div>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Returns false if there is no inverse matrix. </dd></dl>
 <p>Calculates the inverse of this Matrix The inverse is calculated using Cramers rule. If no inverse exists then 'false' is returned. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01307">1307</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01309">1309</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="irr_math_8h_source.html#l00035">FLT_MIN</a>, <a class="el" href="irr_math_8h_source.html#l00270">irr::core::iszero()</a>, and <a class="el" href="irr_math_8h_source.html#l00535">irr::core::reciprocal()</a>.</p>
 
@@ -1097,7 +1097,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01393">1393</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01395">1395</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1196,7 +1196,7 @@ template&lt;class T &gt; </div>
 
 <p>Gets transposed matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01874">1874</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01876">1876</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>Referenced by <a class="el" href="matrix4_8h_source.html#l00440">irr::core::CMatrix4&lt; T &gt;::CMatrix4()</a>.</p>
 
@@ -1221,7 +1221,7 @@ template&lt;class T &gt; </div>
 
 <p>Gets transposed matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01884">1884</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01886">1886</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1261,7 +1261,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01857">1857</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01859">1859</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1309,7 +1309,7 @@ template&lt;class T &gt; </div>
 
 <p>Translate a vector by the inverse of the translation part of this matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01290">1290</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01292">1292</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -1430,7 +1430,7 @@ template&lt;class T &gt; </div>
 <p>Calculates inverse of matrix. Slow. </p>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Returns false if there is no inverse matrix. </dd></dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01424">1424</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01426">1426</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1453,7 +1453,7 @@ template&lt;class T &gt; </div>
 
 <p>Multiplies this matrix by a 1x4 matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01268">1268</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01270">1270</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1476,7 +1476,7 @@ template&lt;class T &gt; </div>
 
 <p>Returns true if other matrix is not equal to this matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01484">1484</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01486">1486</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1756,7 +1756,7 @@ template&lt;class T &gt; </div>
 
 <p>Sets this matrix equal to the other matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01443">1443</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01445">1445</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1779,7 +1779,7 @@ template&lt;class T &gt; </div>
 
 <p>Sets all elements of this matrix to the value. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01456">1456</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01458">1458</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -1802,7 +1802,7 @@ template&lt;class T &gt; </div>
 
 <p>Returns true if other matrix is equal to this matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01469">1469</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01471">1471</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -2080,7 +2080,7 @@ template&lt;class T &gt; </div>
 
 <p>Sets if the matrix is definitely identity matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02188">2188</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02190">2190</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>Referenced by <a class="el" href="quaternion_8h_source.html#l00349">irr::core::quaternion::getMatrix()</a>, and <a class="el" href="quaternion_8h_source.html#l00411">irr::core::quaternion::getMatrix_transposed()</a>.</p>
 
@@ -2183,7 +2183,7 @@ template&lt;class T &gt; </div>
 
 <p>Sets all matrix data members at once. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02175">2175</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02177">2177</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -2261,7 +2261,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02041">2041</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02043">2043</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -2402,7 +2402,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Altered matrix </dd></dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02101">2101</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02103">2103</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -2444,7 +2444,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Altered matrix. </dd></dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02147">2147</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02149">2149</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -2486,7 +2486,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Altered matrix. </dd></dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02159">2159</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02161">2161</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -2528,7 +2528,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Altered matrix </dd></dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02122">2122</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02124">2124</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -2570,7 +2570,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Altered matrix </dd></dl>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02135">2135</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l02137">2137</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 </div>
 </div>
@@ -2601,14 +2601,14 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a class="anchor" id="ac12468d698fbf6cd545e8b3fbf2a0042"></a><!-- doxytag: member="irr::core::CMatrix4::transformBox" ref="ac12468d698fbf6cd545e8b3fbf2a0042" args="(core::aabbox3d&lt; f32 &gt; &amp;box) const " -->
+<a class="anchor" id="abc1f9e77f36b71f14ad9fd31bbce5680"></a><!-- doxytag: member="irr::core::CMatrix4::transformBox" ref="abc1f9e77f36b71f14ad9fd31bbce5680" args="(core::aabbox3d&lt; f32 &gt; &amp;box) const " -->
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html">irr::core::CMatrix4</a>&lt; T &gt;::transformBox </td>
+          <td class="memname">_IRR_DEPRECATED_ void <a class="el" href="classirr_1_1core_1_1_c_matrix4.html">irr::core::CMatrix4</a>&lt; T &gt;::transformBox </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classirr_1_1core_1_1aabbox3d.html">core::aabbox3d</a>&lt; <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>box</em></td><td>)</td>
@@ -2619,9 +2619,10 @@ template&lt;class T &gt; </div>
 <div class="memdoc">
 
 <p>Transforms a axis aligned bounding box. </p>
-<p>The result box of this operation may not be accurate at all. For correct results, use <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a87451aea9c07b71d1a8b6091b8cefa63" title="Transforms a axis aligned bounding box.">transformBoxEx()</a> </p>
+<p>The result box of this operation may not be accurate at all. For correct results, use <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#a87451aea9c07b71d1a8b6091b8cefa63" title="Transforms a axis aligned bounding box.">transformBoxEx()</a></p>
+<p>Transforms the edge-points of a bounding box Deprecated as it's usually not what people need (regards only 2 corners, but other corners might be outside the box after transformation) Use transformBoxEx instead. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01203">1203</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01205">1205</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="aabbox3d_8h_source.html#l00320">irr::core::aabbox3d&lt; T &gt;::MaxEdge</a>, <a class="el" href="aabbox3d_8h_source.html#l00317">irr::core::aabbox3d&lt; T &gt;::MinEdge</a>, and <a class="el" href="aabbox3d_8h_source.html#l00172">irr::core::aabbox3d&lt; T &gt;::repair()</a>.</p>
 
@@ -2645,10 +2646,10 @@ template&lt;class T &gt; </div>
 <div class="memdoc">
 
 <p>Transforms a axis aligned bounding box. </p>
-<p>Transforms a axis aligned bounding box more accurately than <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#ac12468d698fbf6cd545e8b3fbf2a0042" title="Transforms a axis aligned bounding box.">transformBox()</a></p>
-<p>The result box of this operation should by accurate, but this operation is slower than <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#ac12468d698fbf6cd545e8b3fbf2a0042" title="Transforms a axis aligned bounding box.">transformBox()</a>. </p>
+<p>Transforms a axis aligned bounding box more accurately than <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#abc1f9e77f36b71f14ad9fd31bbce5680" title="Transforms a axis aligned bounding box.">transformBox()</a></p>
+<p>The result box of this operation should by accurate, but this operation is slower than <a class="el" href="classirr_1_1core_1_1_c_matrix4.html#abc1f9e77f36b71f14ad9fd31bbce5680" title="Transforms a axis aligned bounding box.">transformBox()</a>. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01217">1217</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01219">1219</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="aabbox3d_8h_source.html#l00320">irr::core::aabbox3d&lt; T &gt;::MaxEdge</a>, <a class="el" href="aabbox3d_8h_source.html#l00317">irr::core::aabbox3d&lt; T &gt;::MinEdge</a>, <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -2865,7 +2866,7 @@ template&lt;class T &gt; </div>
 
 <p>Translate a vector by the translation part of this matrix. </p>
 
-<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01298">1298</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
+<p>Definition at line <a class="el" href="matrix4_8h_source.html#l01300">1300</a> of file <a class="el" href="matrix4_8h_source.html">matrix4.h</a>.</p>
 
 <p>References <a class="el" href="vector3d_8h_source.html#l00408">irr::core::vector3d&lt; T &gt;::X</a>, <a class="el" href="vector3d_8h_source.html#l00411">irr::core::vector3d&lt; T &gt;::Y</a>, and <a class="el" href="vector3d_8h_source.html#l00414">irr::core::vector3d&lt; T &gt;::Z</a>.</p>
 
@@ -2898,7 +2899,7 @@ template&lt;class T &gt; </div>
 
     <li class="footer">
 <a href="http://irrlicht.sourceforge.net" target="_blank">Irrlicht 
-Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Sun Nov 17 2013 20:18:43 for Irrlicht 3D Engine by
+Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Fri Mar 12 2021 17:21:58 for Irrlicht 3D Engine by
 <a href="http://www.doxygen.org/index.html" target="_blank">Doxygen</a> 1.7.5.1 </li>
    </ul>
  </div>

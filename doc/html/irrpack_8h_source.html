@@ -116,7 +116,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00026"></a>00026     <span class="comment">// it started to be necessary with gcc 4.7 on mingw unless compiled with -mno-ms-bitfields.</span>
 <a name="l00027"></a>00027     <span class="comment">// And I found some hints on the web that older gcc versions on the other hand had sometimes</span>
 <a name="l00028"></a>00028     <span class="comment">// trouble with pragma pack while they worked with __attribute__((packed)).</span>
-<a name="l00029"></a>00029 <span class="preprocessor">#   if (__GNUC__ &gt;= 4 ) &amp;&amp; (__GNUC_MINOR__ &gt;= 7)</span>
+<a name="l00029"></a>00029 <span class="preprocessor">#   if (__GNUC__ &gt; 4 ) || ((__GNUC__ == 4 ) &amp;&amp; (__GNUC_MINOR__ &gt;= 7))</span>
 <a name="l00030"></a>00030 <span class="preprocessor"></span><span class="preprocessor">#       pragma pack( push, packing )</span>
 <a name="l00031"></a>00031 <span class="preprocessor"></span><span class="preprocessor">#       pragma pack( 1 )</span>
 <a name="l00032"></a>00032 <span class="preprocessor"></span><span class="preprocessor">#       define PACK_STRUCT</span>
@@ -149,7 +149,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
     <li class="footer">
 <a href="http://irrlicht.sourceforge.net" target="_blank">Irrlicht 
-Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Sun Nov 17 2013 20:18:40 for Irrlicht 3D Engine by
+Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Fri Mar 12 2021 17:21:47 for Irrlicht 3D Engine by
 <a href="http://www.doxygen.org/index.html" target="_blank">Doxygen</a> 1.7.5.1 </li>
    </ul>
  </div>

@@ -141,7 +141,7 @@ Public Member Functions</h2>
 <dl class="el"><dd class="mdescRight">Draws a set of 2d images, using a color and the alpha channel of the texture.  <a href="#a1b7647e900a56f23abb0809fd533617e"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#a6485a684c4dfa4d0f94d0edfb46439a6">draw2DImageBatch</a> (const <a class="el" href="classirr_1_1video_1_1_i_texture.html">video::ITexture</a> *texture, const <a class="el" href="classirr_1_1core_1_1array.html">core::array</a>&lt; core::position2d&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; &gt; &amp;positions, const <a class="el" href="classirr_1_1core_1_1array.html">core::array</a>&lt; <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; &gt; &amp;sourceRects, const <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; *clipRect=0, <a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> color=<a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a>(255, 255, 255, 255), bool useAlphaChannelOfTexture=false)=0
 <dl class="el"><dd class="mdescRight">Draws a set of 2d images, using a color and the alpha channel of the texture.  <a href="#a6485a684c4dfa4d0f94d0edfb46439a6"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#a7b5388e319a0ae1340c3d81db02dd959">draw2DLine</a> (const core::position2d&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; &amp;start, const core::position2d&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; &amp;end, <a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> color=<a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a>(255, 255, 255, 255))=0
 <dl class="el"><dd class="mdescRight">Draws a 2d line. Both start and end will be included in coloring.  <a href="#a7b5388e319a0ae1340c3d81db02dd959"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#aaf1318379f3d70c9347cfa853b944ad4">draw2DPolygon</a> (core::position2d&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; center, <a class="el" href="namespaceirr.html#a0277be98d67dc26ff93b1a6a1d086b07">f32</a> radius, <a class="el" href="classirr_1_1video_1_1_s_color.html">video::SColor</a> color=<a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a>(100, 255, 255, 255), <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> vertexCount=10)=0
-<dl class="el"><dd class="mdescRight">Draws a non filled concyclic regular 2d polyon.  <a href="#aaf1318379f3d70c9347cfa853b944ad4"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ac7f452fae0ef8abe01768a78ba7033b7">draw2DRectangle</a> (<a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> color, const <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; &amp;pos, const <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; *clip=0)=0
+<dl class="el"><dd class="mdescRight">Draws a non filled concyclic regular 2d polygon.  <a href="#aaf1318379f3d70c9347cfa853b944ad4"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ac7f452fae0ef8abe01768a78ba7033b7">draw2DRectangle</a> (<a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> color, const <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; &amp;pos, const <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; *clip=0)=0
 <dl class="el"><dd class="mdescRight">Draws a 2d rectangle.  <a href="#ac7f452fae0ef8abe01768a78ba7033b7"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#a83bb3c30be6c9f960a4d8b625d7dee8c">draw2DRectangle</a> (const <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; &amp;pos, <a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> colorLeftUp, <a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> colorRightUp, <a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> colorLeftDown, <a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> colorRightDown, const <a class="el" href="classirr_1_1core_1_1rect.html">core::rect</a>&lt; <a class="el" href="namespaceirr.html#ac66849b7a6ed16e30ebede579f9b47c6">s32</a> &gt; *clip=0)=0
 <dl class="el"><dd class="mdescRight">Draws a 2d rectangle with a gradient.  <a href="#a83bb3c30be6c9f960a4d8b625d7dee8c"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#a65efe36e19f0570988848175a8af7bd1">draw2DRectangleOutline</a> (const <a class="el" href="namespaceirr_1_1core.html#a628365d56b9d3ca9c887cd7f651f7b45">core::recti</a> &amp;pos, <a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a> color=<a class="el" href="classirr_1_1video_1_1_s_color.html">SColor</a>(255, 255, 255, 255))=0
 <dl class="el"><dd class="mdescRight">Draws the outline of a 2D rectangle.  <a href="#a65efe36e19f0570988848175a8af7bd1"></a><br/></dl><li>virtual void <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#a34845920167c68578a78f842af54d140">draw2DVertexPrimitiveList</a> (const void *vertices, <a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> vertexCount, const void *indexList, <a class="el" href="namespaceirr.html#a0416a53257075833e7002efd0a18e804">u32</a> primCount, <a class="el" href="namespaceirr_1_1video.html#a0e3b59e025e0d0db0ed2ee0ce904deac">E_VERTEX_TYPE</a> vType=EVT_STANDARD, <a class="el" href="namespaceirr_1_1scene.html#a5d7de82f2169761194b2f44d95cdc1dc">scene::E_PRIMITIVE_TYPE</a> pType=scene::EPT_TRIANGLES, <a class="el" href="namespaceirr_1_1video.html#af152a1edea2579f0517e0049525acb55">E_INDEX_TYPE</a> iType=EIT_16BIT)=0
@@ -426,7 +426,7 @@ Public Member Functions</h2>
   </table>
   </dd>
 </dl>
-<dl class="return"><dt><b>Returns:</b></dt><dd>Pointer to the created texture or 0 if the texture could not be created. This pointer should not be dropped. See <a class="el" href="classirr_1_1_i_reference_counted.html#afb169a857e0d2cdb96b8821cb9bff17a" title="Drops the object. Decrements the reference counter by one.">IReferenceCounted::drop()</a> for more information. </dd></dl>
+<dl class="return"><dt><b>Returns:</b></dt><dd>Pointer to the created texture or 0 if the texture could not be created. This pointer should not be dropped. See <a class="el" href="classirr_1_1_i_reference_counted.html#afb169a857e0d2cdb96b8821cb9bff17a" title="Drops the object. Decrements the reference counter by one.">IReferenceCounted::drop()</a> for more information. You may want to remove it from driver texture cache with removeTexture if you no longer need it. </dd></dl>
 
 </div>
 </div>
@@ -1467,7 +1467,7 @@ Public Member Functions</h2>
 </div>
 <div class="memdoc">
 
-<p>Draws a non filled concyclic regular 2d polyon. </p>
+<p>Draws a non filled concyclic regular 2d polygon. </p>
 <p>This method can be used to draw circles, but also triangles, tetragons, pentagons, hexagons, heptagons, octagons, enneagons, decagons, hendecagons, dodecagon, triskaidecagons, etc. I think you'll got it now. And all this by simply specifying the vertex count. Welcome to the wonders of geometry. </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table class="params">
@@ -1872,7 +1872,7 @@ Public Member Functions</h2>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00722">722</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
+<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00724">724</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
 
 <p>References <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ab18ac3ba8b6dbaa4437c5eb3b1e2f4fb">drawVertexPrimitiveList()</a>, <a class="el" href="_s_vertex_index_8h_source.html#l00017">irr::video::EIT_16BIT</a>, <a class="el" href="_e_primitive_types_8h_source.html#l00034">irr::scene::EPT_TRIANGLE_FAN</a>, and <a class="el" href="_s3_d_vertex_8h_source.html#l00021">irr::video::EVT_STANDARD</a>.</p>
 
@@ -1927,7 +1927,7 @@ Public Member Functions</h2>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00737">737</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
+<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00739">739</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
 
 <p>References <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ab18ac3ba8b6dbaa4437c5eb3b1e2f4fb">drawVertexPrimitiveList()</a>, <a class="el" href="_s_vertex_index_8h_source.html#l00017">irr::video::EIT_16BIT</a>, <a class="el" href="_e_primitive_types_8h_source.html#l00034">irr::scene::EPT_TRIANGLE_FAN</a>, and <a class="el" href="_s3_d_vertex_8h_source.html#l00025">irr::video::EVT_2TCOORDS</a>.</p>
 
@@ -1982,7 +1982,7 @@ Public Member Functions</h2>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00752">752</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
+<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00754">754</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
 
 <p>References <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ab18ac3ba8b6dbaa4437c5eb3b1e2f4fb">drawVertexPrimitiveList()</a>, <a class="el" href="_s_vertex_index_8h_source.html#l00017">irr::video::EIT_16BIT</a>, <a class="el" href="_e_primitive_types_8h_source.html#l00034">irr::scene::EPT_TRIANGLE_FAN</a>, and <a class="el" href="_s3_d_vertex_8h_source.html#l00029">irr::video::EVT_TANGENTS</a>.</p>
 
@@ -2037,7 +2037,7 @@ Public Member Functions</h2>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00677">677</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
+<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00679">679</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
 
 <p>References <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ab18ac3ba8b6dbaa4437c5eb3b1e2f4fb">drawVertexPrimitiveList()</a>, <a class="el" href="_s_vertex_index_8h_source.html#l00017">irr::video::EIT_16BIT</a>, <a class="el" href="_e_primitive_types_8h_source.html#l00037">irr::scene::EPT_TRIANGLES</a>, and <a class="el" href="_s3_d_vertex_8h_source.html#l00021">irr::video::EVT_STANDARD</a>.</p>
 
@@ -2092,7 +2092,7 @@ Public Member Functions</h2>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00692">692</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
+<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00694">694</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
 
 <p>References <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ab18ac3ba8b6dbaa4437c5eb3b1e2f4fb">drawVertexPrimitiveList()</a>, <a class="el" href="_s_vertex_index_8h_source.html#l00017">irr::video::EIT_16BIT</a>, <a class="el" href="_e_primitive_types_8h_source.html#l00037">irr::scene::EPT_TRIANGLES</a>, and <a class="el" href="_s3_d_vertex_8h_source.html#l00025">irr::video::EVT_2TCOORDS</a>.</p>
 
@@ -2147,7 +2147,7 @@ Public Member Functions</h2>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00707">707</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
+<p>Definition at line <a class="el" href="_i_video_driver_8h_source.html#l00709">709</a> of file <a class="el" href="_i_video_driver_8h_source.html">IVideoDriver.h</a>.</p>
 
 <p>References <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#ab18ac3ba8b6dbaa4437c5eb3b1e2f4fb">drawVertexPrimitiveList()</a>, <a class="el" href="_s_vertex_index_8h_source.html#l00017">irr::video::EIT_16BIT</a>, <a class="el" href="_e_primitive_types_8h_source.html#l00037">irr::scene::EPT_TRIANGLES</a>, and <a class="el" href="_s3_d_vertex_8h_source.html#l00029">irr::video::EVT_TANGENTS</a>.</p>
 
@@ -2436,7 +2436,7 @@ Public Member Functions</h2>
   </dd>
 </dl>
 
-<p>Referenced by <a class="el" href="_i_video_driver_8h_source.html#l00722">drawIndexedTriangleFan()</a>, and <a class="el" href="_i_video_driver_8h_source.html#l00677">drawIndexedTriangleList()</a>.</p>
+<p>Referenced by <a class="el" href="_i_video_driver_8h_source.html#l00724">drawIndexedTriangleFan()</a>, and <a class="el" href="_i_video_driver_8h_source.html#l00679">drawIndexedTriangleList()</a>.</p>
 
 </div>
 </div>
@@ -2931,7 +2931,7 @@ Public Member Functions</h2>
 <div class="memdoc">
 
 <p>Get the 2d override material for altering its values. </p>
-<p>The 2d override materual allows to alter certain render states of the 2d methods. Not all members of <a class="el" href="classirr_1_1video_1_1_s_material.html" title="Struct for holding parameters for a material renderer.">SMaterial</a> are honored, especially not MaterialType and Textures. Moreover, the zbuffer is always ignored, and lighting is always off. All other flags can be changed, though some might have to effect in most cases. Please note that you have to enable/disable this effect with enableInitMaterial2D(). This effect is costly, as it increases the number of state changes considerably. Always reset the values when done. </p>
+<p>The 2d override material allows to alter certain render states of the 2d methods. Not all members of <a class="el" href="classirr_1_1video_1_1_s_material.html" title="Struct for holding parameters for a material renderer.">SMaterial</a> are honored, especially not MaterialType and Textures. Moreover, the zbuffer is always ignored, and lighting is always off. All other flags can be changed, though some might have to effect in most cases. Please note that you have to enable/disable this effect with <a class="el" href="classirr_1_1video_1_1_i_video_driver.html#a7686a41fe0f506bb04c262f724f65756" title="Enable the 2d override material.">enableMaterial2D()</a>. This effect is costly, as it increases the number of state changes considerably. Always reset the values when done. </p>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Material reference which should be altered to reflect the new settings. </dd></dl>
 
 </div>
@@ -4468,7 +4468,7 @@ Public Member Functions</h2>
 
     <li class="footer">
 <a href="http://irrlicht.sourceforge.net" target="_blank">Irrlicht 
-Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Sun Nov 17 2013 20:18:48 for Irrlicht 3D Engine by
+Engine</a> Documentation &copy; 2003-2012 by Nikolaus Gebhardt. Generated on Fri Mar 12 2021 17:22:12 for Irrlicht 3D Engine by
 <a href="http://www.doxygen.org/index.html" target="_blank">Doxygen</a> 1.7.5.1 </li>
    </ul>
  </div>
