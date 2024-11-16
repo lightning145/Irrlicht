@@ -17,8 +17,10 @@ namespace scene
 CCameraSceneNode::CCameraSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id,
 	const core::vector3df& position, const core::vector3df& lookat)
 	: ICameraSceneNode(parent, mgr, id, position),
+	BoundingBox(core::vector3df(0, 0, 0)),	// Camera has no size. Still not sure if FLT_MAX might be the better variant
 	Target(lookat), UpVector(0.0f, 1.0f, 0.0f), ZNear(1.0f), ZFar(3000.0f),
-	InputReceiverEnabled(true), TargetAndRotationAreBound(false)
+	InputReceiverEnabled(true), TargetAndRotationAreBound(false),
+	HasD3DStyleProjectionMatrix(true)
 {
 	#ifdef _DEBUG
 	setDebugName("CCameraSceneNode");
@@ -26,14 +28,18 @@ CCameraSceneNode::CCameraSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 i
 
 	// set default projection
 	Fovy = core::PI / 2.5f;	// Field of view, in radians.
+	Aspect = 4.0f / 3.0f;	// Aspect ratio.
 
 	const video::IVideoDriver* const d = mgr?mgr->getVideoDriver():0;
 	if (d)
-		Aspect = (f32)d->getCurrentRenderTargetSize().Width /
-			(f32)d->getCurrentRenderTargetSize().Height;
-	else
-		Aspect = 4.0f / 3.0f;	// Aspect ratio.
+	{
+		if ( d->getCurrentRenderTargetSize().Height )
+			Aspect = (f32)d->getCurrentRenderTargetSize().Width /
+				(f32)d->getCurrentRenderTargetSize().Height;
+		HasD3DStyleProjectionMatrix = d->getDriverType() != video::EDT_OPENGL;
+	}
 
+	ViewArea.setFarNearDistance(ZFar - ZNear);
 	recalculateProjectionMatrix();
 	recalculateViewArea();
 }
@@ -49,7 +55,6 @@ void CCameraSceneNode::setInputReceiverEnabled(bool enabled)
 //! Returns if the input receiver of the camera is currently enabled.
 bool CCameraSceneNode::isInputReceiverEnabled() const
 {
-	_IRR_IMPLEMENT_MANAGED_MARSHALLING_BUGFIX;
 	return InputReceiverEnabled;
 }
 
@@ -196,11 +201,17 @@ f32 CCameraSceneNode::getFOV() const
 	return Fovy;
 }
 
+core::vector2df CCameraSceneNode::getLensShift() const
+{
+	return LensShift;
+}
+
 
 void CCameraSceneNode::setNearValue(f32 f)
 {
 	ZNear = f;
 	recalculateProjectionMatrix();
+	ViewArea.setFarNearDistance(ZFar - ZNear);
 }
 
 
@@ -208,6 +219,7 @@ void CCameraSceneNode::setFarValue(f32 f)
 {
 	ZFar = f;
 	recalculateProjectionMatrix();
+	ViewArea.setFarNearDistance(ZFar - ZNear);
 }
 
 
@@ -224,10 +236,16 @@ void CCameraSceneNode::setFOV(f32 f)
 	recalculateProjectionMatrix();
 }
 
+void CCameraSceneNode::setLensShift(const core::vector2df& shift)
+{
+	LensShift = shift;
+	recalculateProjectionMatrix();
+}
 
 void CCameraSceneNode::recalculateProjectionMatrix()
 {
-	ViewArea.getTransform ( video::ETS_PROJECTION ).buildProjectionMatrixPerspectiveFovLH(Fovy, Aspect, ZNear, ZFar);
+	ViewArea.getTransform ( video::ETS_PROJECTION ).buildProjectionMatrixPerspectiveFovLH(Fovy, Aspect, ZNear, ZFar, HasD3DStyleProjectionMatrix, LensShift.X, LensShift.Y);
+	IsOrthogonal = false;
 }
 
 
@@ -244,6 +262,23 @@ void CCameraSceneNode::OnRegisterSceneNode()
 //! render
 void CCameraSceneNode::render()
 {
+	updateAbsolutePosition();	// depending on that call in onAnimate is risky (might not be in SceneManager or it or it's parent might be invisible and still should render)
+	updateMatrices();
+
+	video::IVideoDriver* driver = SceneManager->getVideoDriver();
+	if ( driver)
+	{
+		driver->setTransform(video::ETS_PROJECTION, ViewArea.getTransform ( video::ETS_PROJECTION) );
+		driver->setTransform(video::ETS_VIEW, ViewArea.getTransform ( video::ETS_VIEW) );
+	}
+}
+
+//! update
+void CCameraSceneNode::updateMatrices()
+{
+#if defined(_IRR_COMPILE_WITH_90_DEGREE_CAMERA)
+	ViewArea.getTransform(video::ETS_VIEW).buildCameraLookAtMatrixLH(getAbsolutePosition(), Target, UpVector);
+#else
 	core::vector3df pos = getAbsolutePosition();
 	core::vector3df tgtv = Target - pos;
 	tgtv.normalize();
@@ -261,26 +296,22 @@ void CCameraSceneNode::render()
 	}
 
 	ViewArea.getTransform(video::ETS_VIEW).buildCameraLookAtMatrixLH(pos, Target, up);
+#endif
 	ViewArea.getTransform(video::ETS_VIEW) *= Affector;
 	recalculateViewArea();
-
-	video::IVideoDriver* driver = SceneManager->getVideoDriver();
-	if ( driver)
-	{
-		driver->setTransform(video::ETS_PROJECTION, ViewArea.getTransform ( video::ETS_PROJECTION) );
-		driver->setTransform(video::ETS_VIEW, ViewArea.getTransform ( video::ETS_VIEW) );
-	}
 }
-
 
 //! returns the axis aligned bounding box of this node
 const core::aabbox3d<f32>& CCameraSceneNode::getBoundingBox() const
 {
-	return ViewArea.getBoundingBox();
+	// NOTE: We deliberately don't return the boundingbox of the ViewArea. People can access that already.
+	// We want to prevent cameras from having their bounding box colliding in the SceneCollisionManager.
+	// If another boundingbox is ever necessary then please move BoundingBox to ICameraSceneNode and make it accessible (via a setter or an enum with options).
+	return BoundingBox;
 }
 
 
-//! returns the view frustum. needed sometimes by bsp or lod render nodes.
+//! returns the view frustum.
 const SViewFrustum* CCameraSceneNode::getViewFrustum() const
 {
 	return &ViewArea;
@@ -294,7 +325,7 @@ void CCameraSceneNode::recalculateViewArea()
 	core::matrix4 m(core::matrix4::EM4CONST_NOTHING);
 	m.setbyproduct_nocheck(ViewArea.getTransform(video::ETS_PROJECTION),
 						ViewArea.getTransform(video::ETS_VIEW));
-	ViewArea.setFrom(m);
+	ViewArea.setFrom(m, HasD3DStyleProjectionMatrix);
 }
 
 
@@ -309,6 +340,7 @@ void CCameraSceneNode::serializeAttributes(io::IAttributes* out, io::SAttributeR
 	out->addFloat("Aspect", Aspect);
 	out->addFloat("ZNear", ZNear);
 	out->addFloat("ZFar", ZFar);
+	out->addVector2d("LensShift", LensShift);
 	out->addBool("Binding", TargetAndRotationAreBound);
 	out->addBool("ReceiveInput", InputReceiverEnabled);
 }
@@ -318,15 +350,15 @@ void CCameraSceneNode::deserializeAttributes(io::IAttributes* in, io::SAttribute
 {
 	ICameraSceneNode::deserializeAttributes(in, options);
 
-	Target = in->getAttributeAsVector3d("Target");
-	UpVector = in->getAttributeAsVector3d("UpVector");
-	Fovy = in->getAttributeAsFloat("Fovy");
-	Aspect = in->getAttributeAsFloat("Aspect");
-	ZNear = in->getAttributeAsFloat("ZNear");
-	ZFar = in->getAttributeAsFloat("ZFar");
-	TargetAndRotationAreBound = in->getAttributeAsBool("Binding");
-	if ( in->findAttribute("ReceiveInput") )
-		InputReceiverEnabled = in->getAttributeAsBool("ReceiveInput");
+	Target = in->getAttributeAsVector3d("Target", Target);
+	UpVector = in->getAttributeAsVector3d("UpVector", UpVector);
+	Fovy = in->getAttributeAsFloat("Fovy", Fovy);
+	Aspect = in->getAttributeAsFloat("Aspect", Aspect);
+	ZNear = in->getAttributeAsFloat("ZNear", ZNear);
+	ZFar = in->getAttributeAsFloat("ZFar", ZFar);
+	LensShift = in->getAttributeAsVector2d("LensShift", LensShift);
+	TargetAndRotationAreBound = in->getAttributeAsBool("Binding", TargetAndRotationAreBound);
+	InputReceiverEnabled = in->getAttributeAsBool("ReceiveInput", InputReceiverEnabled);
 
 	recalculateProjectionMatrix();
 	recalculateViewArea();

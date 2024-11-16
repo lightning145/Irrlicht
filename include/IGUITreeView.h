@@ -2,8 +2,8 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#ifndef __I_GUI_TREE_VIEW_H_INCLUDED__
-#define __I_GUI_TREE_VIEW_H_INCLUDED__
+#ifndef IRR_I_GUI_TREE_VIEW_H_INCLUDED
+#define IRR_I_GUI_TREE_VIEW_H_INCLUDED
 
 #include "IGUIElement.h"
 #include "IGUIImageList.h"
@@ -15,12 +15,13 @@ namespace gui
 {
 	class IGUIFont;
 	class IGUITreeView;
+	class IGUIScrollBar;
 
 
 	//! Node for gui tree view
 	/** \par This element can create the following events of type EGUI_EVENT_TYPE:
 	\li EGET_TREEVIEW_NODE_EXPAND
-	\li EGET_TREEVIEW_NODE_COLLAPS
+	\li EGET_TREEVIEW_NODE_COLLAPSE
 	\li EGET_TREEVIEW_NODE_DESELECT
 	\li EGET_TREEVIEW_NODE_SELECT
 	*/
@@ -79,7 +80,7 @@ namespace gui
 		//! removes all children (recursive) from this node
 		/** \deprecated Deprecated in 1.8, use clearChildren() instead.
 		This method may be removed by Irrlicht 1.9 */
-		_IRR_DEPRECATED_ void clearChilds()
+		IRR_DEPRECATED void clearChilds()
 		{
 			return clearChildren();
 		}
@@ -88,9 +89,9 @@ namespace gui
 		virtual bool hasChildren() const = 0;
 
 		//! returns true if this node has child nodes
-		/** \deprecated Deprecated in 1.8, use hasChildren() instead. 
+		/** \deprecated Deprecated in 1.8, use hasChildren() instead.
 		This method may be removed by Irrlicht 1.9 */
-		_IRR_DEPRECATED_ bool hasChilds() const
+		IRR_DEPRECATED bool hasChilds() const
 		{
 			return hasChildren();
 		}
@@ -124,7 +125,7 @@ namespace gui
 				void* data=0, IReferenceCounted* data2=0 ) =0;
 
 		//! Adds a new node behind the other node.
-		/** The other node has also te be a child node from this node.
+		/** The other node has also to be a child node from this node.
 		\param other Node to insert after
 		\param text text of the new node
 		\param icon icon text of the new node
@@ -141,7 +142,7 @@ namespace gui
 				void* data=0, IReferenceCounted* data2=0) =0;
 
 		//! Adds a new node before the other node.
-		/** The other node has also te be a child node from this node.
+		/** The other node has also to be a child node from this node.
 		\param other Node to insert before
 		\param text text of the new node
 		\param icon icon text of the new node
@@ -177,21 +178,37 @@ namespace gui
 		*/
 		virtual IGUITreeViewNode* getNextSibling() const = 0;
 
-		//! Returns the next visible (expanded, may be out of scrolling) node from this node.
+		//! Returns the next visible (expanded, may be out of scrolling) node after this node.
 		/** \return The next visible node from this node or 0 if this is
 		the last visible node. */
-		virtual IGUITreeViewNode* getNextVisible() const = 0;
+		virtual IGUITreeViewNode* getNextVisible() const
+		{
+			return getNextNode(true);
+		}
+
+		//! Returns the next node in tree after this node 
+		/** \param onlyVisible When true only check visible nodes (ignoring non-expanded), 
+		*                      When false also return invisible nodes
+		\return The next node after this node or 0 if this is the last node. */
+		virtual IGUITreeViewNode* getNextNode(bool onlyVisible) const = 0;
+
+		//! Returns the previous node in tree before this node
+		/** \param onlyVisible When true only check visible nodes (ignoring non-expanded), 
+		*                      When false also return invisible nodes
+		* \param includeRoot When true it returns the root node as well otherwise already 0 for that
+		\return The previous node before this node or 0 if this is the first node. */
+		virtual IGUITreeViewNode* getPrevNode(bool onlyVisible, bool includeRoot=false) const = 0;
 
 		//! Deletes a child node.
 		/** \return Returns true if the node was found as a child and is deleted. */
 		virtual bool deleteChild( IGUITreeViewNode* child ) = 0;
 
 		//! Moves a child node one position up.
-		/** \return True if the node was found as achild node and was not already the first child. */
+		/** \return True if the node was found as a child node and was not already the first child. */
 		virtual bool moveChildUp( IGUITreeViewNode* child ) = 0;
 
 		//! Moves a child node one position down.
-		/** \return True if the node was found as achild node and was not already the last child. */
+		/** \return True if the node was found as a child node and was not already the last child. */
 		virtual bool moveChildDown( IGUITreeViewNode* child ) = 0;
 
 		//! Returns true if the node is expanded (children are visible).
@@ -219,8 +236,8 @@ namespace gui
 
 
 	//! Default tree view GUI element.
-	/** Displays a windows like tree buttons to expand/collaps the child
-	nodes of an node and optional tree lines. Each node consits of an
+	/** Displays a windows like tree buttons to expand/collapse the child
+	nodes of an node and optional tree lines. Each node consists of an
 	text, an icon text and a void pointer for user data. */
 	class IGUITreeView : public IGUIElement
 	{
@@ -235,6 +252,14 @@ namespace gui
 
 		//! returns the selected node of the tree or 0 if none is selected
 		virtual IGUITreeViewNode* getSelected() const = 0;
+
+		//! Scroll to the given node
+		/** Note: For this to work targetNode must be in the tree and visible
+		* and tree must have a vertical scroll bar.
+		* Also only doing vertical scrolling for now 
+		\param targetNode Node to which it should scroll 
+		\param placement If the node should be on top-middle-bottom of element after scrolling */
+		virtual void scrollTo(IGUITreeViewNode* targetNode, irr::gui::EGUI_ALIGNMENT placement = EGUIA_CENTER) const = 0;
 
 		//! returns true if the tree lines are visible
 		virtual bool getLinesVisible() const = 0;
@@ -252,6 +277,19 @@ namespace gui
 		*/
 		virtual void setIconFont( IGUIFont* font ) = 0;
 
+		//! Sets a skin independent font.
+		/** \param font: New font to set or 0 to use the skin-font. */
+		virtual void setOverrideFont(IGUIFont* font=0) = 0;
+
+		//! Gets the override font (if any)
+		/** \return The override font (may be 0) */
+		virtual IGUIFont* getOverrideFont(void) const = 0;
+
+		//! Get the font which is used for drawing
+		/** This is the override font when one is set and the
+		font of the skin otherwise. */
+		virtual IGUIFont* getActiveFont() const = 0;
+
 		//! Sets the image list which should be used for the image and selected image of every node.
 		/** The default is 0 (no images). */
 		virtual void setImageList( IGUIImageList* imageList ) = 0;
@@ -268,6 +306,17 @@ namespace gui
 		//! Returns the node which is associated to the last event.
 		/** This pointer is only valid inside the OnEvent call! */
 		virtual IGUITreeViewNode* getLastEventNode() const = 0;
+
+		//! Returns the event which triggered EGET_TREEVIEW_NODE_SELECT
+		/** To be used inside OnEvent (like checking for ctrl or shift) 
+		* Should be mouse or keyboard event. */
+		virtual const irr::SEvent& getLastSelectTriggerEvent() const = 0;
+
+		//! Access the vertical scrollbar
+		virtual IGUIScrollBar* getVerticalScrollBar() const = 0;
+
+		//! Access the horizontal scrollbar
+		virtual IGUIScrollBar* getHorizontalScrollBar() const = 0;
 	};
 
 
@@ -275,4 +324,3 @@ namespace gui
 } // end namespace irr
 
 #endif
-

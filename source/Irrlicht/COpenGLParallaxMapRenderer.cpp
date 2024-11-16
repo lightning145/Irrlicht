@@ -2,15 +2,14 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#include "IrrCompileConfig.h"
+#include "COpenGLParallaxMapRenderer.h"
+
 #ifdef _IRR_COMPILE_WITH_OPENGL_
 
-#include "COpenGLParallaxMapRenderer.h"
-#include "COpenGLDriver.h"
-#include "IGPUProgrammingServices.h"
-#include "IShaderConstantSetCallBack.h"
 #include "IVideoDriver.h"
 #include "os.h"
+
+#include "COpenGLDriver.h"
 
 namespace irr
 {
@@ -129,7 +128,7 @@ const char OPENGL_PARALLAX_MAP_VSH[] =
 
 // Irrlicht Engine OpenGL render path parallax map pixel shader
 // I guess it could be optimized a bit, because I wrote it in D3D ASM and
-// transfered it 1:1 to OpenGL
+// transferred it 1:1 to OpenGL
 const char OPENGL_PARALLAX_MAP_PSH[] =
 	"!!ARBfp1.0\n"\
 	"#_IRR_FOG_MODE_\n"\
@@ -155,7 +154,7 @@ const char OPENGL_PARALLAX_MAP_PSH[] =
 	"MAD normalMapColor, normalMapColor, {2,2,2,2}, {-1,-1,-1,-1}; \n"\
 	"\n"\
 	"\n"\
-	"# extract eye vector (so substract 0.5f and multiply by 2)\n"\
+	"# extract eye vector (so subtract 0.5f and multiply by 2)\n"\
 	"MAD temp, eyeVector, {2,2,2,2}, {-1,-1,-1,-1};\n"\
 	"\n"\
 	"# height = height * scale \n"\
@@ -187,7 +186,7 @@ const char OPENGL_PARALLAX_MAP_PSH[] =
 
 //! Constructor
 COpenGLParallaxMapRenderer::COpenGLParallaxMapRenderer(video::COpenGLDriver* driver,
-	s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial)
+	s32& outMaterialTypeNr, E_MATERIAL_TYPE baseMaterial)
 	: COpenGLShaderMaterialRenderer(driver, 0, baseMaterial), CompiledShaders(true)
 {
 
@@ -319,7 +318,7 @@ void COpenGLParallaxMapRenderer::OnSetConstants(IMaterialRendererServices* servi
 
 		// Transform the light by the inverse world matrix to get it into object space.
 		invWorldMat.transformVect(light.Position);
-		
+
 		services->setVertexShaderConstant(
 			reinterpret_cast<const f32*>(&light.Position), 12+(i*2), 1);
 

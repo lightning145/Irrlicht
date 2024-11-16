@@ -24,16 +24,12 @@
 #pragma comment(lib, "SDL.lib")
 #endif // _MSC_VER
 
+static int SDLDeviceInstances = 0;
+
 namespace irr
 {
 	namespace video
 	{
-
-		#ifdef _IRR_COMPILE_WITH_DIRECT3D_8_
-		IVideoDriver* createDirectX8Driver(const irr::SIrrlichtCreationParameters& params,
-			io::IFileSystem* io, HWND window);
-		#endif
-
 		#ifdef _IRR_COMPILE_WITH_DIRECT3D_9_
 		IVideoDriver* createDirectX9Driver(const irr::SIrrlichtCreationParameters& params,
 			io::IFileSystem* io, HWND window);
@@ -57,31 +53,39 @@ CIrrDeviceSDL::CIrrDeviceSDL(const SIrrlichtCreationParameters& param)
 	Screen((SDL_Surface*)param.WindowId), SDL_Flags(SDL_ANYFORMAT),
 	MouseX(0), MouseY(0), MouseButtonStates(0),
 	Width(param.WindowSize.Width), Height(param.WindowSize.Height),
-	Resizable(false), WindowMinimized(false)
+	Resizable(param.WindowResizable == 1 ? true : false), WindowMinimized(false)
 {
 	#ifdef _DEBUG
 	setDebugName("CIrrDeviceSDL");
 	#endif
 
-	// Initialize SDL... Timer for sleep, video for the obvious, and
-	// noparachute prevents SDL from catching fatal errors.
-	if (SDL_Init( SDL_INIT_TIMER|SDL_INIT_VIDEO|
-#if defined(_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
-				SDL_INIT_JOYSTICK|
-#endif
-				SDL_INIT_NOPARACHUTE ) < 0)
+	if ( ++SDLDeviceInstances == 1 )
 	{
-		os::Printer::log( "Unable to initialize SDL!", SDL_GetError());
-		Close = true;
-	}
+		// Initialize SDL... Timer for sleep, video for the obvious, and
+		// noparachute prevents SDL from catching fatal errors.
+		if (SDL_Init( SDL_INIT_TIMER|SDL_INIT_VIDEO|
+#if defined(_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
+					SDL_INIT_JOYSTICK|
+#endif
+					SDL_INIT_NOPARACHUTE ) < 0)
+		{
+			os::Printer::log("Unable to initialize SDL!", SDL_GetError());
+			Close = true;
+		}
+		else
+		{
+			os::Printer::log("SDL initialized", ELL_INFORMATION);
+		}
 
 #if defined(_IRR_WINDOWS_)
-	SDL_putenv("SDL_VIDEODRIVER=directx");
+		SDL_putenv("SDL_VIDEODRIVER=directx");
 #elif defined(_IRR_OSX_PLATFORM_)
-	SDL_putenv("SDL_VIDEODRIVER=Quartz");
+		SDL_putenv("SDL_VIDEODRIVER=Quartz");
 #else
-	SDL_putenv("SDL_VIDEODRIVER=x11");
+		SDL_putenv("SDL_VIDEODRIVER=x11");
 #endif
+	}
+
 //	SDL_putenv("SDL_WINDOWID=");
 
 	SDL_VERSION(&Info.version);
@@ -95,7 +99,10 @@ CIrrDeviceSDL::CIrrDeviceSDL(const SIrrlichtCreationParameters& param)
 	sdlversion += Info.version.patch;
 
 	Operator = new COSOperator(sdlversion);
-	os::Printer::log(sdlversion.c_str(), ELL_INFORMATION);
+	if ( SDLDeviceInstances == 1 )
+	{
+		os::Printer::log(sdlversion.c_str(), ELL_INFORMATION);
+	}
 
 	// create keymap
 	createKeyMap();
@@ -106,6 +113,8 @@ CIrrDeviceSDL::CIrrDeviceSDL(const SIrrlichtCreationParameters& param)
 
 	if ( CreationParams.Fullscreen )
 		SDL_Flags |= SDL_FULLSCREEN;
+	else if ( Resizable )
+		SDL_Flags |= SDL_RESIZABLE;
 	if (CreationParams.DriverType == video::EDT_OPENGL)
 		SDL_Flags |= SDL_OPENGL;
 	else if (CreationParams.Doublebuffer)
@@ -131,12 +140,17 @@ CIrrDeviceSDL::CIrrDeviceSDL(const SIrrlichtCreationParameters& param)
 //! destructor
 CIrrDeviceSDL::~CIrrDeviceSDL()
 {
+	if ( --SDLDeviceInstances == 0 )
+	{
 #if defined(_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
-	const u32 numJoysticks = Joysticks.size();
-	for (u32 i=0; i<numJoysticks; ++i)
-		SDL_JoystickClose(Joysticks[i]);
+		const u32 numJoysticks = Joysticks.size();
+		for (u32 i=0; i<numJoysticks; ++i)
+			SDL_JoystickClose(Joysticks[i]);
 #endif
-	SDL_Quit();
+		SDL_Quit();
+
+		os::Printer::log("Quit SDL", ELL_INFORMATION);
+	}
 }
 
 
@@ -205,7 +219,7 @@ bool CIrrDeviceSDL::createWindow()
 	}
 	if ( !Screen )
 	{
-		os::Printer::log( "Could not initialize display!" );
+		os::Printer::log("Could not initialize display!" );
 		return false;
 	}
 
@@ -218,13 +232,8 @@ void CIrrDeviceSDL::createDriver()
 {
 	switch(CreationParams.DriverType)
 	{
-	case video::EDT_DIRECT3D8:
-		#ifdef _IRR_COMPILE_WITH_DIRECT3D_8_
-		os::Printer::log("SDL device does not support DIRECT38 driver. Try another one.", ELL_ERROR);
-		#else
-		os::Printer::log("DIRECT3D8 Driver was not compiled into this dll. Try another one.", ELL_ERROR);
-		#endif // _IRR_COMPILE_WITH_DIRECT3D_8_
-
+	case video::DEPRECATED_EDT_DIRECT3D8_NO_LONGER_EXISTS:
+		os::Printer::log("DIRECT3D8 Driver is no longer supported in Irrlicht. Try another one.", ELL_ERROR);
 		break;
 
 	case video::EDT_DIRECT3D9:
@@ -326,7 +335,7 @@ bool CIrrDeviceSDL::run()
 				else
 				{
 					irrevent.MouseInput.Event = irr::EMIE_RMOUSE_LEFT_UP;
-					MouseButtonStates &= !irr::EMBSM_RIGHT;
+					MouseButtonStates &= ~irr::EMBSM_RIGHT;
 				}
 				break;
 
@@ -339,7 +348,7 @@ bool CIrrDeviceSDL::run()
 				else
 				{
 					irrevent.MouseInput.Event = irr::EMIE_MMOUSE_LEFT_UP;
-					MouseButtonStates &= !irr::EMBSM_MIDDLE;
+					MouseButtonStates &= ~irr::EMBSM_MIDDLE;
 				}
 				break;
 
@@ -430,8 +439,8 @@ bool CIrrDeviceSDL::run()
 
 		case SDL_USEREVENT:
 			irrevent.EventType = irr::EET_USER_EVENT;
-			irrevent.UserEvent.UserData1 = *(reinterpret_cast<s32*>(&SDL_event.user.data1));
-			irrevent.UserEvent.UserData2 = *(reinterpret_cast<s32*>(&SDL_event.user.data2));
+			irrevent.UserEvent.UserData1 = reinterpret_cast<uintptr_t>(SDL_event.user.data1);
+			irrevent.UserEvent.UserData2 = reinterpret_cast<uintptr_t>(SDL_event.user.data2);
 
 			postEventFromUser(irrevent);
 			break;
@@ -603,7 +612,7 @@ void CIrrDeviceSDL::setWindowCaption(const wchar_t* text)
 bool CIrrDeviceSDL::present(video::IImage* surface, void* windowId, core::rect<s32>* srcClip)
 {
 	SDL_Surface *sdlSurface = SDL_CreateRGBSurfaceFrom(
-			surface->lock(), surface->getDimension().Width, surface->getDimension().Height,
+			surface->getData(), surface->getDimension().Width, surface->getDimension().Height,
 			surface->getBitsPerPixel(), surface->getPitch(),
 			surface->getRedMask(), surface->getGreenMask(), surface->getBlueMask(), surface->getAlphaMask());
 	if (!sdlSurface)
@@ -675,7 +684,6 @@ bool CIrrDeviceSDL::present(video::IImage* surface, void* windowId, core::rect<s
 	}
 
 	SDL_FreeSurface(sdlSurface);
-	surface->unlock();
 	return (scr != 0);
 }
 
@@ -729,91 +737,20 @@ video::IVideoModeList* CIrrDeviceSDL::getVideoModeList()
 	return VideoModeList;
 }
 
-
-#if defined(_IRR_COMPILE_WITH_OPENGL_) && defined(_IRR_WINDOWS_)
-#define IRR_SHARE_GL_RESOURCE_ON_RESIZE 
-
-// Code from http://www.bytehazard.com/articles/sdlres.html (with some changes) to share GL resources used in SDL on Win32 while switching GL context
-static HGLRC startShareGLResources()
-{
-	// get window handle from SDL
-	SDL_SysWMinfo info;
-	SDL_VERSION(&info.version);
-	if (SDL_GetWMInfo(&info) == -1) 
-	{
-		return 0;
-	}
-
-	 // get device context handle
-	HDC tempDC = GetDC( info.window );
-
-	// create temporary context
-	HGLRC tempRC = wglCreateContext( tempDC );
-	if (tempRC == NULL) 
-	{
-		ReleaseDC(info.window, tempDC);
-		return 0;
-	}
- 
-	// share resources to temporary context
-	SetLastError(0);
-	if (!wglShareLists(info.hglrc, tempRC)) 
-	{
-		ReleaseDC(info.window, tempDC);
-		return 0;
-	}
-
-	return tempRC;
-}
-
-static bool endShareGLResources(HGLRC tempRC)
-{
-	SDL_SysWMinfo info;
-	SDL_VERSION(&info.version);
-	if (SDL_GetWMInfo(&info) == -1) 
-	{
-		return false;
-	}
- 
-	// share resources to new SDL-created context
-	if (!wglShareLists(tempRC, info.hglrc)) 
-	{
-		return false;
-	}
- 
-	// we no longer need our temporary context
-	if (!wglDeleteContext(tempRC)) 
-	{
-		return false;
-	}
- 
-	return true;
-}
-#endif
-
-
 //! Sets if the window should be resizable in windowed mode.
 void CIrrDeviceSDL::setResizable(bool resize)
 {
 	if (resize != Resizable)
 	{
-#ifdef  IRR_SHARE_GL_RESOURCE_ON_RESIZE
-		// Workaround: 	On Windows SDL loses the OpenGL context when the SDL_Flags changes.
-		// So we create a temporary OpenGL context to share the GL resources.
-		// It doesn't seem to happen on other platforms.
-		const bool shareGLresources = (SDL_Flags & SDL_OPENGL) != 0;
-		HGLRC shareRC = 0;
-		if ( shareGLresources )
+#if defined(_IRR_COMPILE_WITH_OPENGL_) && defined(_IRR_WINDOWS_)
+		if ( SDL_Flags & SDL_OPENGL )
 		{
-			shareRC = startShareGLResources();
-			if ( shareRC == 0  )
-			{
-				os::Printer::log("Can't change resizable without losing GL context.");
-				return;
-			}
+			// For unknown reasons the hack with sharing resources which was added in Irrlicht 1.8.5 for this no longer works in 1.9
+			// But at least we got a new WindowResizable flag since Irrlicht 1.9.
+			os::Printer::log("setResizable not supported with this device/driver combination. Use SIrrCreationParameters.WindowResizable instead.", ELL_WARNING);
+			return;
 		}
 #endif
-
 
 		if (resize)
 			SDL_Flags |= SDL_RESIZABLE;
@@ -822,13 +759,6 @@ void CIrrDeviceSDL::setResizable(bool resize)
 
 		Screen = SDL_SetVideoMode( 0, 0, 0, SDL_Flags );
 		Resizable = resize;
-
-#ifdef IRR_SHARE_GL_RESOURCE_ON_RESIZE
-		if ( shareRC != 0 )
-		{
-			endShareGLResources(shareRC);
-		}
-#endif
 	}
 }
 
@@ -844,6 +774,12 @@ void CIrrDeviceSDL::minimizeWindow()
 void CIrrDeviceSDL::maximizeWindow()
 {
 	// do nothing
+}
+
+//! Get the position of this window on screen
+core::position2di CIrrDeviceSDL::getWindowPosition()
+{
+    return core::position2di(-1, -1);
 }
 
 

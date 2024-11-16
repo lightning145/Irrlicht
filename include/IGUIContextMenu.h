@@ -2,8 +2,8 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#ifndef __I_GUI_CONTEXT_MENU_H_INCLUDED__
-#define __I_GUI_CONTEXT_MENU_H_INCLUDED__
+#ifndef IRR_I_GUI_CONTEXT_MENU_H_INCLUDED
+#define IRR_I_GUI_CONTEXT_MENU_H_INCLUDED
 
 #include "IGUIElement.h"
 
@@ -24,7 +24,7 @@ namespace gui
 		//! call setVisible(false)
 		ECMC_HIDE = 2
 
-	 	// note to implementors - this is planned as bitset, so continue with 4 if you need to add further flags.
+		// note to implementers - this is planned as bitset, so continue with 4 if you need to add further flags.
 	};
 
 	//! GUI Context menu interface.
@@ -46,6 +46,13 @@ namespace gui
 		//! get current behavior when the menu will be closed
 		virtual ECONTEXT_MENU_CLOSE getCloseHandling() const = 0;
 
+		//! When true menu is closed when the item check changes
+		//! Default is true
+		virtual void setCloseOnCheck(bool doCloseOnCheck) = 0;
+
+		//! Get current setting for behaviour when checking items
+		virtual bool getCloseOnCheck() const = 0;
+
 		//! Get amount of menu items
 		virtual u32 getItemCount() const = 0;
 
@@ -64,10 +71,10 @@ namespace gui
 		virtual u32 addItem(const wchar_t* text, s32 commandId=-1, bool enabled=true,
 			bool hasSubMenu=false, bool checked=false, bool autoChecking=false) = 0;
 
-        //! Insert a menu item at specified position.
-        /** \param idx: Position to insert the new element,
-        should be smaller than itemcount otherwise the item is added to the end.
-        \param text: Text of menu item. Set this to 0 to create
+		//! Insert a menu item at specified position.
+		/** \param idx: Position to insert the new element,
+		should be smaller than itemcount otherwise the item is added to the end.
+		\param text: Text of menu item. Set this to 0 to create
 		an separator instead of a real item, which is the same like
 		calling addSeparator();
 		\param commandId: Command id of menu item, a simple id you may
@@ -81,11 +88,11 @@ namespace gui
 		virtual u32 insertItem(u32 idx, const wchar_t* text, s32 commandId=-1, bool enabled=true,
 			bool hasSubMenu=false, bool checked=false, bool autoChecking=false) = 0;
 
-		//! Find an item by it's CommandID
+		//! Find an item by its CommandID
 		/**
 		\param commandId: We are looking for the first item which has this commandID
 		\param idxStartSearch: Start searching from this index.
-        \return Returns the index of the item when found or otherwise -1. */
+		\return Returns the index of the item when found or otherwise -1. */
 		virtual s32 findItemWithCommandId(s32 commandId, u32 idxStartSearch=0) const = 0;
 
 		//! Adds a separator item to the menu
@@ -159,4 +166,3 @@ namespace gui
 } // end namespace irr
 
 #endif
-
