@@ -115,11 +115,53 @@ namespace video
 		//! Support for different blend functions. Without, only ADD is available
 		EVDF_BLEND_OPERATIONS,
 
+		//! Support for separate blending for RGB and Alpha.
+		EVDF_BLEND_SEPARATE,
+
 		//! Support for texture coord transformation via texture matrix
 		EVDF_TEXTURE_MATRIX,
 
-		//! Support for NVidia's CG shader language
-		EVDF_CG,
+		//! Support for DXTn compressed textures.
+		EVDF_TEXTURE_COMPRESSED_DXT,
+
+		//! Is Vertex Shader 4.0 supported?
+		EVDF_VERTEX_SHADER_4_0,
+
+		//! Is Pixel Shader 4.0 supported?
+		EVDF_PIXEL_SHADER_4_0,
+
+		//! Is Geometry Shader 4.0 supported?
+		EVDF_GEOMETRY_SHADER_4_0,
+
+		//! Is Compute Shader 4.0 supported?
+		EVDF_COMPUTING_SHADER_4_0,
+		
+		//! Is Vertex Shader 4.1 supported?
+		EVDF_VERTEX_SHADER_4_1,
+
+		//! Is Pixel Shader 4.1 supported?
+		EVDF_PIXEL_SHADER_4_1,
+
+		//! Is Geometry Shader 4.1 supported?
+		EVDF_GEOMETRY_SHADER_4_1,
+		
+		//! Is Computing Shader 4.1 supported?
+		EVDF_COMPUTING_SHADER_4_1,
+		
+		//! Is Vertex Shader 5.0 supported?
+		EVDF_VERTEX_SHADER_5_0,
+
+		//! Is Pixel Shader 5.0 supported?
+		EVDF_PIXEL_SHADER_5_0,
+
+		//! Is Geometry Shader 5.0 supported?
+		EVDF_GEOMETRY_SHADER_5_0,
+
+		//! Is Computing Shader 5.0 supported?
+		EVDF_COMPUTING_SHADER_5_0,
+		
+		//! Supports texture multisampling
+		EVDF_TEXTURE_MULTISAMPLING,
 
 		//! Only used for counting the elements of this enum
 		EVDF_COUNT

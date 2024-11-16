@@ -1,64 +1,88 @@
 --------------------------
-Changes in 1.8.5
- - Fix some aes compile warnings on gcc about fall-throughs.
- - No longer include sys/sysctl.h on other platforms than OSX. Fixes compile errors in COSOperator on newer Linux systems.
- - Update script to generate tutorial.html's in example folders. Add missing ones. Update existing ones. Thanks @Guillian J for noticing those were outdated.
- - Update libpng to 1.6.37 (from 1.6.23)
- - Fix CIrrDeviceSDL::getVideoModeList which didn't return video modes before. Thx @kas1e for report and patch.
- - CIrrDeviceMacOSX now sets the SEvent.MouseInput Shift and Control values on mouse events like the other devices. Thanks @ Zero King  for patch (#321)
- - isWindowFocused in IrrDeviceSDL device now returns the input focus like the other devices. Before it was returning a mouse-over-window state.
- - Prevent SDL device from dropping OpenGL resources on Win32 when setResizable was called with OpenGL driver. Thanks @ kas1e for reporting (http://irrlicht.sourceforge.net/forum/viewtopic.php?f=7&t=52083&start=0)
-   And thanks to http://www.bytehazard.com/articles/sdlres.html for the workaround.
- - Fix isWindowActive when using SDL device. Before it was only active when the mouse was over the window. Thanks @ kas1e for reporting (http://irrlicht.sourceforge.net/forum/viewtopic.php?f=7&t=52083&start=0)
- - Fix SViewFrustum::clipLine. Was before clipping at wrong points (inverse places along lines).
- - Fix compilation on OSX and prevent capturing mouse cursor when Window is not on top (Patch #319)
-   Thanks at Artem Shoobovych for bugreport and patch (https://sourceforge.net/p/irrlicht/patches/319/)
- - Fix serialization of OverrideTextColorEnabled flag in CGUITab. Thanks @ chronologicaldot for reporting (http://irrlicht.sourceforge.net/forum/viewtopic.php?f=7&t=52344&p=303891#p303891)
- - CFileSystem::getAbsolutePath no longer wrongly converts an empty filename to "/" on unix platforms.
-   This fixes the bug that CFileSystem::createAndOpenFile("") returned a (strange behaving) non-null file pointer.
-   Additional check also added in createAndOpenFile to early out on empty names.
- - Fix bug in cursor positions when compiled with newer Windows SDK's (v110 in VS2012) and running on Systems >= Windows Vista in windowed mode.
-   Thanks @Mustapha Tachouct for the bugreport and patch proposal. Also thanks @BakeMyCake for an earlier report.
- - IOSOperator::getSysteMemory() no longer returns incorrect values with >2GB. Thanks @Eduline - human development for report and patch.
- - Increase KEY_KEY_CODES_COUNT to fix problem with laptop keyboards which return the keycode 0xff for the function key. Thx @Klokancz for bugreport and patch.
- - Fix bug when calling activateJoysticks on windows several times. It had appened joystick information instead of replacing it, thereby increasing joystick number on each call.
-   Only happened compiling with _IRR_COMPILE_WITH_DIRECTINPUT_JOYSTICK_ (which is the default). Linux and SDL implementation not affected.
-   Thx @Andrea Demetrio for the bugreport.
- - Fix bug in fast_atof when reading floating point numbers with more than 16 digits past the dot. Those produced completely wrong results (sometimes even causing INF numbers).
-   This bug also did cause many meshloaders to have problems with certain meshes (basically all text-based formats are affected).
- - Accuracy of fast_atof is back to older Irrlicht versions (fixes test warnings, usually not a noticable problem).
- - Fix crash in eventhandling when calling remove() on a contextmenu while it has focus.
- - CImageLoaderJPG::isALoadableFileFormat uses a test which allows to load more jpg formats (for example uncompressed jpg's). Thx @Yaron Cohen-Tal for report, test-image and his help with the patch.
+Changes in 1.9 (not yet released)
+
+- Added Visual Studio 2013 project files.
+- Added ability to set custom depth/stencil texture for render targets.
+- Added new color formats: ECF_R8, ECF_R8G8, ECF_D16, ECF_D32, ECF_D24S8.
+- Can now enable/disable backround drawing for IGUITable.
+- Bugfix: Cloning CBillboardSceneNode now copies colors and sizes.
+- EditBox works now with numpad on X11
+- Added helper functions for converting between wchar and utf-8. Patch provided by Hendu.
+- Added sphere frustum culling support. Patch provided by Hendu.
+- Fixed issues with setViewPort method under OpenGL. (reported by anontypist)
+- Fixed several selection, highlighting and clipping bugs in CGUITreeview (thx @ AReichl for the patch + test)
+- Removed DllMain from the static windows build (thx @ AReichl for reporting)
+- Fixed maximize/minimize under Linux by supporting NETWM hints. Patch provided by hendu.
+- ISceneNode::deserializeAttributes uses now old values for parameters which are not in the attributes (thx @entity for noticing).
+- Add interface for easier access to scrollbars for IGUIListBox, IGUITreeView and IGUITable
+- Fix serializing colors as strings. Was previously mixing up strings with number-arrays and hex color values. Now using hex color values always, but also fixed the the handling when it get's number-array strings.
+- Fix IAttributes::setAttribute implementation for textures (did do nothing before).
+- Added support for separate blending in OpenGL and D3D9 drivers.
+- Added pack_textureBlendFuncSeparate and unpack_textureBlendFuncSeparate functions, which allow to use separate blending functions in OpenGL.
+- Added BlendFactor field to SMaterial which allow user to set blending factor per SMaterial set call without use EMT_ONETEXTURE_BLEND type.
+- Fixed issue with blending operation set to EBO_NONE and some transparent material types.
+- Add a code profiler (stop-watch style)
+- Add IGUITable::getItemHeight to access item (row) height
+- Add override font to IGUITable
+- IGUITable can now disable the active column.
+- IGUIElement::getElementFromPoint now virtual
+- Fixed issue with wrongly enabled Z-writing for transparent shader materials. Thanks Hendu for this fix.
+- Allow more control over particle behavior. This also changed the default behavior.
+- ISceneNodeAnimators can now be disabled and paused.
+- Maya camera no longer get's stuck in "rotating" state when a mouse-up event is lost (thx @ JLouisB for reporting).
+- Focus behavior of IGUIEnvironment now controllable (right-click focus, mouse-over focus). Disabled elements no longer get the focus unless users enforce it.
+- Buttons can now now have 7 more image-states, 1 more sprite-state and the sprites are now scaleable.
+- Spritebanks can now draw scaled sprites and are a little easier to use.
+- Improved i18n key input for X11 (languages like cyrillic work now).
+- Fix bug that ListBox would not allow to 'tab' to the next element (thx @ FlavourBoat for reporting)
+- IGUIEnvironment::getNextElement now public (was only in CGUIEnvironment before).
+- Add an overwrite mode to editbox. Patch provided by Adam(aka kingadami).
+- Add IGUIImages::setDrawBounds/getDrawBounds to allow coding stuff like progress bars.
+- Add IGUIImages::setSourceRect/getSourceRect to allow using only parts of an image (can also be used to mirror and scroll them).
+- Dev-Cpp project file removed (wasn't really supported for some time already)
+- Collada dae-loader now set's the vertex colors (thx @sf17k for report and test-models)
+- IAttributes interface changed. Parameters are now passed by const-ref instead of per value.
+- Fix c::b project obj folder names. Some static builds had used the shared folders (thx @ gerdb for reporting)
+- Add ITexture::getSource which can be used to check where the last IVideoDriver::getTexture call found the texture.
+- Add IMeshTextureLoader interface and replace texture-loading algorithms in most meshloaders.
+- CGUICheckBox no longer gives up focus on EMIE_LMOUSE_LEFT_UP (thx @Demre and @REDDemon for reporting)
+- Bugfix: IGUIElement::addChild now prevents setting an element as it's own child.
+- GUI editor improvements (prevent crash, improve UI)
+- Add IrrlichtDevice::setWindowSize.
+- Bugfix: getFont for xml-fonts now also works for fonts inside archives (thx @Neirdan for bugreport)
+- Added function irr::core::mergeFilename
+- Add ISceneNodeAnimator::setStartTime/getStartTime to allow resetting movement animators.
+- Improve speed for finalizing skinned meshes (removal of unnecessary frames after loading) (thx @ichtyander for the testmodel)
+- Collada loader now instantiates camera nodes which had been ignore so far (thx @NemoStein for the test .dae)
+- line2d::intersectWith has a new parameter to allow ignoring intersections with coincident lines
+- vector2d::equals now has an tolerance parameter for passing the epsilon (like vector3d had). Note that this changes the default
+  behavior of vector2d::equals as well as functions using it like the operators for ==, !=, <, >, <=, >= when using vector2d with f64
+  as the tolerance is increased in that case (for f32 and integer values it shouldn't make any difference).
+- Material renderers which offers blending feature (eg. EMT_TRANSPARENT_ALPHA_CHANNEL, EMT_ONETEXTURE_BLEND etc.) require SMaterial::BlendOperation set to other value than EBO_NONE.
+- Removed support for built-in T&L variables in ASM/GLSL shaders (variables related to vertices eg. gl_MultiTexCoord0 are still supported). This change allow us to reduce CPU overhead in shader material renderers.
+- IGUIEnvironment::hasFocus has now a parameter checkSubElements as subelements are usually seen as part of an element. Default unfortunately must be false due to backward compatibility.
+- Add IGUIElement::isTrulyVisible which works like ISceneNode::isTrulyVisible and checks for parent visibility as well.
+- Improved DDS loader and added support for DXTn (DXT1-5) compressed textures in OpenGL and Direct3D9 drivers.
+- Add function ISceneNode::getTransformedBoundingBoxEdges.
+- Improve automatic compiling under solaris (proposed by curaga)
+- Add in IGUICheckBox: setDrawBackground, isDrawBackgroundEnabled, setDrawBorder, isDrawBorderEnabled
+- IGUISpinBox now passes on the EGET_BUTTON_CLICKED, EGET_EDITBOX_CHANGED and EGET_EDITBOX_ENTER events from it's sub-elements.
+- IGUISpinBox no longer validates values after each character type but only on KEY_ENTER and when losing focus. New behavior can be set with IGUISpinBox::setValidateOn
+- IAttributes::getAttributeAs functions now can have a customizable default-parameter to return when attributeName is not found
+- Added ECFN_DISABLED value (it works like ECFN_NEVER worked before) and changed ECFN_NEVER behaviour
+  (it works like its equivalent value in OpenGL/Direct3D).
+- Removed boolean interface from IShaderConstantSetCallBack, please use integer interface instead of them.
+- Add a LeakHunter class which can be enabled with compile-flag _IRR_COMPILE_WITH_LEAK_HUNTER_ to find leaking IReferenceCounted objects.
+- Add _IRR_COMPILE_WITH_XML_ define to allow compiling Irrlicht without xml (patch written by curaga)
+- Add functions to set/get cursor character and blinktime to IGUIEditBox
+- Collada exporter calculates values for orthographic camera now on export
+- Collada exporter now exports the camera up-vector correctly.
+- Add IColladaMeshWriter::findGeometryNameForNode
+- Add getters IGUIButton::isDrawBorderEnabled and IGUIButton::isDrawBackgroundEnabled
 
 --------------------------
-Changes in 1.8.4 (9th July 2016, svn r5321)
- - Tests on Unix now have a short pause between switching drivers to avoid certain X11 errors.
- - Fix CEnumAttribute::getInt() which could crash  (thx @ luthyr for reporting)
- - No longer try to run tests for drivers not supported on a platform
- - Update lights and renderTargetTexture tests to work with Windows 10 (can't have so tiny Windows anymore).
- - Deprecate CMatrix4::transformBox as the result is no longer a boundingbox. Use CMatrix4::transformBoxEx instead (which has been available for a long time).
- - Fix CSceneCollisionManager::getPickedNodeBB which could sometimes miss collisions.
- - Add -U__STRICT_ANSI__ option to c::b project files to allow compiling with -std=c++11 and add an error when trying to compile with Irrlicht with __STRICT_ANSI__
- - Update libpng to 1.6.23
- - Update zlib to 1.2.8
- - Fix some compile warnings in aes which got handled as errors by some c++11 compilers.
- - Get rid of some misleading-indentation warnings in gcc6
- - Fix serialization of the InputReceiverEnabled flag in CCameraSceneNode
- - Fix pasting text from X11 applications to Irrlicht. Thanks @est31 for the patch.
- - Tests give now a warning when stabilizing screenshots failed. Aslo trying more often now (a hack as taking screenshots otherwise fails often in windowed mode on some systems).
+Changes in 1.8.2
 
---------------------------
-Changes in 1.8.3 (13.9.2015)
- - Fix the fix for compiling on GCC5 (thanks to est31 for report and patch)
-
---------------------------
-Changes in 1.8.2 (30.8.2015)
-
- - Add VS2013 project files
- - Fix compiling with IRR_LINUX_XCURSOR_
- - Fix compiling with NO_IRR_COMPILE_WITH_LIBJPEG_  (thx to anontypist for report and patch).
- - Fix compiling on GCC5 on MinGW (thanks to Slipxy for finding the bug and to osense for reporting it).
- - Fix loading of .X and .B3D models with non-normalized quaternion rotations (thanks to JLouisB for a test-model).
  - Fix compiling on Free BSD (thanks to leper for reporting and patch)
  - Fix bug with multiple SetPixelFormat calls. (reported and fixed by anontypist)
  - Fix bug related to memory release in PNG image loader. Thanks elephoenix for it.
@@ -81,9 +105,9 @@ Changes in 1.8.1 (17.11.2013)
  - Improved OpenGL performance under OSX (Thanks devonsoft for reporting).
  - Fixed OSX compilation issues.
  - [KNOWN BUG] Software driver doesn't work properly under OSX 10.9.
- - For speed improvement the following attributes accessible by ISceneManager::getParameters() are no longer updated in release: 
+ - For speed improvement the following attributes accessible by ISceneManager::getParameters() are no longer updated in release:
    "culled", "calls", "drawn_solid", "drawn_transparent", "drawn_transparent_effect".
-   They can be enabled by compiling Irrlicht with the define _IRR_SCENEMANAGER_DEBUG. 
+   They can be enabled by compiling Irrlicht with the define _IRR_SCENEMANAGER_DEBUG.
    Thanks @hendu for reporting, see http://irrlicht.sourceforge.net/forum/viewtopic.php?f=2&t=48211 for the discussion.
  - Fix compile problem with CIrrDeviceSDL on VS2008 (and maybe other systems). Thanks @HellFlip for reporting.
  - Fix quaternion::rotationFromTo() (Thanks @takamoto for reporting)
@@ -121,21 +145,21 @@ Changes in 1.8 (7.11.2012)
 
  - Add another saveScene overload which allows to pass in a user-created XMLWriter. Patch suggested by eversilver.
 
- - quaternion conversions to and from matrix4 no longer invert rotations. 
+ - quaternion conversions to and from matrix4 no longer invert rotations.
    To test if your code was affected by this you can set IRR_TEST_BROKEN_QUATERNION_USE in quaternion.h and try to compile your application.
-   Then on all compile-errors when you pass the matrix to the quaternion you can replace the matrix with the transposed matrix.
+   Then on all compile-errors when you pass the matrix to the quaternion you can replace the matrix transposed matrix.
    For all errors you get on getMatrix() you can use quaternion::getMatrix_transposed instead.
 
  - CGUIEnvironment::loadGui - loading a gui into a target-element no longer messes up when the gui-file contained guienvironment serialization.
 
  - Colladawriter now exports materials per node when those are used in Irrlicht
- 
+
  - Colladawriter now writing matrices for node transformations as old solution did not work with CDummyTransformationSceneNode's.
- 
+
  - Colladawriter no longer create an extra node for the scenemanger as <visual_scene> has that job in Collada.
- 
+
  - Colladwriter no longer makes all Scenenodes children of ambient-light as that can be parallel on the same layer instead.
- 
+
  - Colladareader now creates the ambient-light correct instead of creating a point-light for it.
 
  - Add new parameter to array reallocate function. This prevents a reallocation in case the array would become smaller. As the reallocation operation is quite time consuming, this can be avoided on request now, on the expense of more memory consumption.

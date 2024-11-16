@@ -68,14 +68,14 @@ Version 1.0 - 29 July 2004
 #include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_LMTS_LOADER_
 
-#include "SMeshBufferLightMap.h"
+#include "CLMTSMeshFileLoader.h"
+#include "CMeshTextureLoader.h"
 #include "SAnimatedMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 #include "IReadFile.h"
 #include "IAttributes.h"
 #include "ISceneManager.h"
-#include "CLMTSMeshFileLoader.h"
 #include "os.h"
 
 namespace irr
@@ -97,6 +97,8 @@ CLMTSMeshFileLoader::CLMTSMeshFileLoader(io::IFileSystem* fs,
 
 	if (FileSystem)
 		FileSystem->grab();
+
+	TextureLoader = new CMeshTextureLoader( FileSystem, Driver );
 }
 
 
@@ -131,6 +133,9 @@ bool CLMTSMeshFileLoader::isALoadableFileExtension(const io::path& filename) con
 
 IAnimatedMesh* CLMTSMeshFileLoader::createMesh(io::IReadFile* file)
 {
+	if ( getMeshTextureLoader() )
+		getMeshTextureLoader()->setMeshFile(file);
+
 	u32 i;
 	u32 id;
 
@@ -264,42 +269,46 @@ void CLMTSMeshFileLoader::constructMesh(SMesh* mesh)
 {
 	for (s32 i=0; i<Header.SubsetCount; ++i)
 	{
-		scene::SMeshBufferLightMap* meshBuffer = new scene::SMeshBufferLightMap();
+		CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer = new CMeshBuffer<video::S3DVertex2TCoords>(Driver->getVertexDescriptor(1));
 
 		// EMT_LIGHTMAP_M2/EMT_LIGHTMAP_M4 also possible
-		meshBuffer->Material.MaterialType = video::EMT_LIGHTMAP;
-		meshBuffer->Material.Wireframe = false;
-		meshBuffer->Material.Lighting = false;
+		meshBuffer->getMaterial().MaterialType = video::EMT_LIGHTMAP;
+		meshBuffer->getMaterial().Wireframe = false;
+		meshBuffer->getMaterial().Lighting = false;
 
 		mesh->addMeshBuffer(meshBuffer);
 
 		const u32 offs = Subsets[i].Offset * 3;
 
+		video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)meshBuffer->getVertexBuffer()->getVertices();
+
 		for (u32 sc=0; sc<Subsets[i].Count; sc++)
 		{
-			const u32 idx = meshBuffer->getVertexCount();
+			const u32 idx = meshBuffer->getVertexBuffer()->getVertexCount();
 
 			for (u32 vu=0; vu<3; ++vu)
 			{
 				const SLMTSTriangleDataEntry& v = Triangles[offs+(3*sc)+vu];
-				meshBuffer->Vertices.push_back(
-						video::S3DVertex2TCoords(
+
+				video::S3DVertex2TCoords vtx(
 							v.X, v.Y, v.Z,
 							video::SColor(255,255,255,255),
-							v.U1, v.V1, v.U2, v.V2));
+							v.U1, v.V1, v.U2, v.V2);
+
+				meshBuffer->getVertexBuffer()->addVertex(&vtx);
 			}
 			const core::vector3df normal = core::plane3df(
-				meshBuffer->Vertices[idx].Pos,
-				meshBuffer->Vertices[idx+1].Pos,
-				meshBuffer->Vertices[idx+2].Pos).Normal;
+				Vertices[idx].Pos,
+				Vertices[idx+1].Pos,
+				Vertices[idx+2].Pos).Normal;
 
-			meshBuffer->Vertices[idx].Normal = normal;
-			meshBuffer->Vertices[idx+1].Normal = normal;
-			meshBuffer->Vertices[idx+2].Normal = normal;
+			Vertices[idx].Normal = normal;
+			Vertices[idx+1].Normal = normal;
+			Vertices[idx+2].Normal = normal;
 
-			meshBuffer->Indices.push_back(idx);
-			meshBuffer->Indices.push_back(idx+1);
-			meshBuffer->Indices.push_back(idx+2);
+			meshBuffer->getIndexBuffer()->addIndex(idx);
+			meshBuffer->getIndexBuffer()->addIndex(idx+1);
+			meshBuffer->getIndexBuffer()->addIndex(idx+2);
 		}
 		meshBuffer->drop();
 	}
@@ -326,19 +335,20 @@ void CLMTSMeshFileLoader::loadTextures(SMesh* mesh)
 	core::array<u32> id2id;
 	id2id.reallocate(Header.TextureCount);
 
-	const core::stringc Path = Parameters->getAttributeAsString(LMTS_TEXTURE_PATH);
+	if ( getMeshTextureLoader() )
+	{
+		if ( Parameters->existsAttribute(LMTS_TEXTURE_PATH) )
+			getMeshTextureLoader()->setTexturePath(Parameters->getAttributeAsString(LMTS_TEXTURE_PATH));
+	}
 
 	core::stringc s;
 	for (u32 t=0; t<Header.TextureCount; ++t)
 	{
-		video::ITexture* tmptex = 0;
-		s = Path;
-		s.append(Textures[t].Filename);
-
-		if (FileSystem->existFile(s))
-			tmptex = Driver->getTexture(s);
-		else
+		video::ITexture* tmptex = getMeshTextureLoader() ? getMeshTextureLoader()->getTexture(Textures[t].Filename) : NULL;
+		if ( !tmptex )
+		{
 			os::Printer::log("LMTS WARNING: Texture does not exist", s.c_str(), ELL_WARNING);
+		}
 
 		if (Textures[t].Flags & 0x01)
 		{

@@ -34,8 +34,8 @@ const char OPENGL_PARALLAX_MAP_VSH[] =
 	"ATTRIB InColor = vertex.color;\n"\
 	"ATTRIB InNormal = vertex.normal;\n"\
 	"ATTRIB InTexCoord = vertex.texcoord[0];\n"\
-	"ATTRIB InTangent = vertex.texcoord[1];\n"\
-	"ATTRIB InBinormal = vertex.texcoord[2];\n"\
+	"ATTRIB InTangent = vertex.attrib[4];\n"\
+	"ATTRIB InBinormal = vertex.attrib[5];\n"\
 	"\n"\
 	"#output\n"\
 	"OUTPUT OutPos = result.position;\n"\
@@ -187,7 +187,7 @@ const char OPENGL_PARALLAX_MAP_PSH[] =
 
 //! Constructor
 COpenGLParallaxMapRenderer::COpenGLParallaxMapRenderer(video::COpenGLDriver* driver,
-	s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial)
+	s32& outMaterialTypeNr, E_MATERIAL_TYPE baseMaterial)
 	: COpenGLShaderMaterialRenderer(driver, 0, baseMaterial), CompiledShaders(true)
 {
 
@@ -319,7 +319,7 @@ void COpenGLParallaxMapRenderer::OnSetConstants(IMaterialRendererServices* servi
 
 		// Transform the light by the inverse world matrix to get it into object space.
 		invWorldMat.transformVect(light.Position);
-		
+
 		services->setVertexShaderConstant(
 			reinterpret_cast<const f32*>(&light.Position), 12+(i*2), 1);
 

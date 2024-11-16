@@ -5,6 +5,8 @@
 #ifndef __E_DRIVER_TYPES_H_INCLUDED__
 #define __E_DRIVER_TYPES_H_INCLUDED__
 
+#include "irrTypes.h"
+
 namespace irr
 {
 namespace video
@@ -52,13 +54,30 @@ namespace video
 		primitives. */
 		EDT_OPENGL,
 
+		//!Direct3D 11 device, only available on Win32 platforms from vista and higher
+		/** Performs hardware accelerated rendering of 3D and 2D
+		primitives. */
+		EDT_DIRECT3D11,
+
 		//! No driver, just for counting the elements
 		EDT_COUNT
 	};
+	
+	const c8* const DRIVER_TYPE_NAMES[] = 
+	{
+		"NullDriver",
+		"Software Renderer",
+		"Burning's Video",
+		"Direct3D 8.1",
+		"Direct3D 9.0c",
+		"OpenGL 1.x/2.x/3.x",
+		"Direct3D 11.0",
+		0 
+	};
+	
 
 } // end namespace video
 } // end namespace irr
 
 
 #endif
-

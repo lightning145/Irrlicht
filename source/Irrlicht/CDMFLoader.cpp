@@ -22,13 +22,15 @@
 #endif
 
 #include "CDMFLoader.h"
+#include "CMeshTextureLoader.h"
 #include "ISceneManager.h"
 #include "IAttributes.h"
 #include "SAnimatedMesh.h"
-#include "SSkinMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 #include "irrMath.h"
 #include "dmfsupport.h"
+#include "IMeshManipulator.h"
 
 namespace irr
 {
@@ -42,32 +44,21 @@ CDMFLoader::CDMFLoader(ISceneManager* smgr, io::IFileSystem* filesys)
 	#ifdef _DEBUG
 	IReferenceCounted::setDebugName("CDMFLoader");
 	#endif
+
+	TextureLoader = new CMeshTextureLoader( FileSystem, SceneMgr->getVideoDriver() );
 }
 
-
-void CDMFLoader::findFile(bool use_mat_dirs, const core::stringc& path, const core::stringc& matPath, core::stringc& filename)
+void CDMFLoader::addMaterialPath(core::stringc& filename, const core::stringc& matPath)
 {
-	// path + texpath + full name
-	if (use_mat_dirs && FileSystem->existFile(path+matPath+filename))
-		filename = path+matPath+filename;
-	// path + full name
-	else if (FileSystem->existFile(path+filename))
-		filename = path+filename;
-	// path + texpath + base name
-	else if (use_mat_dirs && FileSystem->existFile(path+matPath+FileSystem->getFileBasename(filename)))
-		filename = path+matPath+FileSystem->getFileBasename(filename);
-	// path + base name
-	else if (FileSystem->existFile(path+FileSystem->getFileBasename(filename)))
-		filename = path+FileSystem->getFileBasename(filename);
-	// texpath + full name
-	else if (use_mat_dirs && FileSystem->existFile(matPath+filename))
+	c8 last = matPath.lastChar();
+	if ( last == '/' || last == '\\' )
 		filename = matPath+filename;
-	// texpath + base name
-	else if (use_mat_dirs && FileSystem->existFile(matPath+FileSystem->getFileBasename(filename)))
-		filename = matPath+FileSystem->getFileBasename(filename);
-	// base name
-	else if (FileSystem->existFile(FileSystem->getFileBasename(filename)))
-		filename = FileSystem->getFileBasename(filename);
+	else
+	{
+		core::stringc matPathSlash(matPath);
+		matPathSlash.append('/');
+		filename = matPathSlash+filename;
+	}
 }
 
 
@@ -79,6 +70,15 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 {
 	if (!file)
 		return 0;
+
+	if ( getMeshTextureLoader() )
+	{
+		getMeshTextureLoader()->setMeshFile(file);
+
+		if ( SceneMgr->getParameters()->existsAttribute(DMF_TEXTURE_PATH) )
+			getMeshTextureLoader()->setTexturePath( SceneMgr->getParameters()->getAttributeAsString(DMF_TEXTURE_PATH) );
+	}
+
 	video::IVideoDriver* driver = SceneMgr->getVideoDriver();
 
 	//Load stringlist
@@ -124,10 +124,10 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 		for (i=0; i<header.numMaterials; i++)
 		{
 			//create a new SMeshBufferLightMap for each material
-			SSkinMeshBuffer* buffer = new SSkinMeshBuffer();
-			buffer->Material.MaterialType = video::EMT_LIGHTMAP_LIGHTING;
-			buffer->Material.Wireframe = false;
-			buffer->Material.Lighting = true;
+			CMeshBuffer<video::S3DVertex>* buffer = new CMeshBuffer<video::S3DVertex>(SceneMgr->getVideoDriver()->getVertexDescriptor(0));
+			buffer->getMaterial().MaterialType = video::EMT_LIGHTMAP_LIGHTING;
+			buffer->getMaterial().Wireframe = false;
+			buffer->getMaterial().Lighting = true;
 			mesh->addMeshBuffer(buffer);
 			buffer->drop();
 		}
@@ -149,20 +149,29 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 						verts[faces[i].firstVert+1].pos,
 						verts[faces[i].firstVert+2].pos).getNormal().normalize();
 
-			SSkinMeshBuffer* meshBuffer = (SSkinMeshBuffer*)mesh->getMeshBuffer(
+			IMeshBuffer* meshBuffer = (IMeshBuffer*)mesh->getMeshBuffer(
 					faces[i].materialID);
 
-			const bool use2TCoords = meshBuffer->Vertices_2TCoords.size() ||
-				materiali[faces[i].materialID].lightmapName.size();
-			if (use2TCoords && meshBuffer->Vertices_Standard.size())
-				meshBuffer->convertTo2TCoords();
-			const u32 base = meshBuffer->Vertices_2TCoords.size()?meshBuffer->Vertices_2TCoords.size():meshBuffer->Vertices_Standard.size();
+			bool use2TCoords = false;
+			
+			if(materiali[faces[i].materialID].lightmapName.size())
+				bool use2TCoords = true;
+
+			if (use2TCoords && meshBuffer->getVertexBuffer(0)->getVertexSize() != sizeof(video::S3DVertex2TCoords))
+			{
+				video::IVertexDescriptor* vd = SceneMgr->getVideoDriver()->getVertexDescriptor(1);
+				CVertexBuffer<video::S3DVertex2TCoords>* vb = new CVertexBuffer<video::S3DVertex2TCoords>();
+				SceneMgr->getMeshManipulator()->copyVertices(meshBuffer->getVertexBuffer(0), 0, meshBuffer->getVertexDescriptor(), vb, 0, vd, false);
+				meshBuffer->setVertexDescriptor(vd);
+				meshBuffer->setVertexBuffer(vb, 0);
+				vb->drop();
+			}
+
+			const u32 base = meshBuffer->getVertexBuffer()->getVertexCount();
 
 			// Add this face's verts
 			if (use2TCoords)
 			{
-				// make sure we have the proper type set
-				meshBuffer->VertexType=video::EVT_2TCOORDS;
 				for (u32 v = 0; v < faces[i].numVerts; v++)
 				{
 					const dmfVert& vv = verts[faces[i].firstVert + v];
@@ -173,7 +182,7 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 					{
 						vert.TCoords.set(vv.tc.X,-vv.tc.Y);
 					}
-					meshBuffer->Vertices_2TCoords.push_back(vert);
+					meshBuffer->getVertexBuffer()->addVertex(&vert);
 				}
 			}
 			else
@@ -188,7 +197,7 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 					{
 						vert.TCoords.set(vv.tc.X,-vv.tc.Y);
 					}
-					meshBuffer->Vertices_Standard.push_back(vert);
+					meshBuffer->getVertexBuffer()->addVertex(&vert);
 				}
 			}
 
@@ -204,9 +213,9 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 				else // even
 					c = l + 1;
 
-				meshBuffer->Indices.push_back(base + h);
-				meshBuffer->Indices.push_back(base + l);
-				meshBuffer->Indices.push_back(base + c);
+				meshBuffer->getIndexBuffer()->addIndex(base + h);
+				meshBuffer->getIndexBuffer()->addIndex(base + l);
+				meshBuffer->getIndexBuffer()->addIndex(base + c);
 
 				if (v & 1) // odd
 					h--;
@@ -226,8 +235,8 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 	i = 0;
 	while(i < mesh->MeshBuffers.size())
 	{
-		if (mesh->MeshBuffers[i]->getVertexCount() == 0 ||
-			mesh->MeshBuffers[i]->getIndexCount() == 0)
+		if (mesh->MeshBuffers[i]->getVertexBuffer()->getVertexCount() == 0 ||
+			mesh->MeshBuffers[i]->getIndexBuffer()->getIndexCount() == 0)
 		{
 			// Meshbuffer is empty -- drop it
 			mesh->MeshBuffers[i]->drop();
@@ -250,13 +259,6 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 #endif
 		const bool use_mat_dirs=!SceneMgr->getParameters()->getAttributeAsBool(DMF_IGNORE_MATERIALS_DIRS);
 
-		core::stringc path;
-		if ( SceneMgr->getParameters()->existsAttribute(DMF_TEXTURE_PATH) )
-			path = SceneMgr->getParameters()->getAttributeAsString(DMF_TEXTURE_PATH);
-		else
-			path = FileSystem->getFileDir(file->getFileName());
-		path += ('/');
-
 		for (i=0; i<mesh->getMeshBufferCount(); i++)
 		{
 			//texture and lightmap
@@ -271,8 +273,10 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 			{
 				if (materiali[i].textureBlend==4)
 					driver->setTextureCreationFlag(video::ETCF_ALWAYS_32_BIT,true);
-				findFile(use_mat_dirs, path, materiali[i].pathName, materiali[i].textureName);
-				tex = driver->getTexture(materiali[i].textureName);
+
+				if ( use_mat_dirs )
+					addMaterialPath(materiali[i].textureName, materiali[i].pathName);
+				tex = getMeshTextureLoader() ? getMeshTextureLoader()->getTexture( materiali[i].textureName ) : NULL;
 			}
 			//Primary texture is just a color
 			else if(materiali[i].textureFlag==1)
@@ -301,8 +305,9 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 			//Lightmap is present
 			if (materiali[i].lightmapFlag == 0)
 			{
-				findFile(use_mat_dirs, path, materiali[i].pathName, materiali[i].lightmapName);
-				lig = driver->getTexture(materiali[i].lightmapName);
+				if ( use_mat_dirs )
+					addMaterialPath(materiali[i].lightmapName, materiali[i].pathName);
+				lig = getMeshTextureLoader() ? getMeshTextureLoader()->getTexture(materiali[i].lightmapName) : NULL;
 			}
 			else //no lightmap
 			{

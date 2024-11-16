@@ -94,7 +94,7 @@ void CAnimatedMeshSceneNode::buildFrameNr(u32 timeMs)
 		}
 	}
 
-	if ((StartFrame==EndFrame))
+	if (StartFrame==EndFrame)
 	{
 		CurrentFrameNr = (f32)StartFrame; //Support for non animated meshes
 	}
@@ -164,7 +164,7 @@ void CAnimatedMeshSceneNode::OnRegisterSceneNode()
 			video::IMaterialRenderer* rnd =
 				driver->getMaterialRenderer(Materials[i].MaterialType);
 
-			if (rnd && rnd->isTransparent())
+			if ((rnd && rnd->isTransparent()) || Materials[i].isTransparent())
 				++transparentCount;
 			else
 				++solidCount;
@@ -311,7 +311,7 @@ void CAnimatedMeshSceneNode::render()
 				if (RenderFromIdentity)
 					driver->setTransform(video::ETS_WORLD, core::IdentityMatrix );
 				else if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 
 				driver->setMaterial(mat);
 				driver->drawMeshBuffer(mb);
@@ -337,7 +337,7 @@ void CAnimatedMeshSceneNode::render()
 				if (RenderFromIdentity)
 					driver->setTransform(video::ETS_WORLD, core::IdentityMatrix );
 				else if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 
 				driver->setMaterial(material);
 				driver->drawMeshBuffer(mb);
@@ -368,7 +368,7 @@ void CAnimatedMeshSceneNode::render()
 			}
 		}
 
-		debug_mat.ZBuffer = video::ECFN_NEVER;
+		debug_mat.ZBuffer = video::ECFN_DISABLED;
 		debug_mat.Lighting = false;
 		driver->setMaterial(debug_mat);
 
@@ -383,7 +383,7 @@ void CAnimatedMeshSceneNode::render()
 				const IMeshBuffer* mb = m->getMeshBuffer(g);
 
 				if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 				driver->draw3DBox(mb->getBoundingBox(), video::SColor(255,190,128,128));
 			}
 		}
@@ -448,7 +448,7 @@ void CAnimatedMeshSceneNode::render()
 		{
 			debug_mat.Lighting = false;
 			debug_mat.Wireframe = true;
-			debug_mat.ZBuffer = video::ECFN_NEVER;
+			debug_mat.ZBuffer = video::ECFN_DISABLED;
 			driver->setMaterial(debug_mat);
 
 			for (u32 g=0; g<m->getMeshBufferCount(); ++g)
@@ -457,7 +457,7 @@ void CAnimatedMeshSceneNode::render()
 				if (RenderFromIdentity)
 					driver->setTransform(video::ETS_WORLD, core::IdentityMatrix );
 				else if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 				driver->drawMeshBuffer(mb);
 			}
 		}
@@ -645,21 +645,6 @@ u32 CAnimatedMeshSceneNode::getJointCount() const
 #endif
 }
 
-
-//! Returns a pointer to a child node, which has the same transformation as
-//! the corresponding joint, if the mesh in this scene node is a ms3d mesh.
-ISceneNode* CAnimatedMeshSceneNode::getMS3DJointNode(const c8* jointName)
-{
-	return  getJointNode(jointName);
-}
-
-
-//! Returns a pointer to a child node, which has the same transformation as
-//! the corresponding joint, if the mesh in this scene node is a .x mesh.
-ISceneNode* CAnimatedMeshSceneNode::getXJointNode(const c8* jointName)
-{
-	return  getJointNode(jointName);
-}
 
 //! Removes a child from this scene node.
 //! Implemented here, to be able to remove the shadow properly, if there is one,

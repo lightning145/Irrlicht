@@ -7,7 +7,7 @@
 
 #include "IMeshLoader.h"
 #include "ISceneManager.h"
-#include "CDynamicMeshBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -38,10 +38,10 @@ public:
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (e.g. ".ply")
-	virtual bool isALoadableFileExtension(const io::path& filename) const;
+	virtual bool isALoadableFileExtension(const io::path& filename) const _IRR_OVERRIDE_;
 
 	//! creates/loads an animated mesh from the file.
-	virtual IAnimatedMesh* createMesh(io::IReadFile* file);
+	virtual IAnimatedMesh* createMesh(io::IReadFile* file) _IRR_OVERRIDE_;
 
 private:
 
@@ -123,8 +123,8 @@ private:
 	void fillBuffer();
 	E_PLY_PROPERTY_TYPE getPropertyType(const c8* typeString) const;
 
-	bool readVertex(const SPLYElement &Element, scene::CDynamicMeshBuffer* mb);
-	bool readFace(const SPLYElement &Element, scene::CDynamicMeshBuffer* mb);
+	bool readVertex(const SPLYElement &Element, scene::IMeshBuffer* mb);
+	bool readFace(const SPLYElement &Element, scene::IMeshBuffer* mb);
 	void skipElement(const SPLYElement &Element);
 	void skipProperty(const SPLYProperty &Property);
 	f32 getFloat(E_PLY_PROPERTY_TYPE t);
@@ -137,7 +137,7 @@ private:
 	io::IReadFile *File;
 	c8 *Buffer;
 	bool IsBinaryFile, IsWrongEndian, EndOfFile;
-	s32 LineLength, WordLength;
+	s32 WordLength;
 	c8 *StartPointer, *EndPointer, *LineEndPointer;
 };
 

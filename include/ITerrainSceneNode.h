@@ -12,7 +12,7 @@
 
 #include "ETerrainElements.h"
 #include "ISceneNode.h"
-#include "IDynamicMeshBuffer.h"
+#include "IMeshBuffer.h"
 #include "irrArray.h"
 
 namespace irr
@@ -79,7 +79,7 @@ namespace scene
 		//! Gets the meshbuffer data based on a specified level of detail.
 		/** \param mb A reference to an IDynamicMeshBuffer object
 		\param LOD The level of detail you want the indices from. */
-		virtual void getMeshBufferForLOD(IDynamicMeshBuffer& mb, s32 LOD=0) const =0;
+		virtual void getMeshBufferForLOD(IMeshBuffer& mb, s32 LOD=0) const =0;
 
 		//! Gets the indices for a specified patch at a specified Level of Detail.
 		/** \param indices A reference to an array of u32 indices.
@@ -152,7 +152,7 @@ namespace scene
 		\param file The file to read the image from. File is not rewinded.
 		\param vertexColor Color of all vertices.
 		\param smoothFactor Number of smoothing passes. */
-		virtual bool loadHeightMap(io::IReadFile* file, 
+		virtual bool loadHeightMap(io::IReadFile* file,
 			video::SColor vertexColor=video::SColor(255,255,255,255),
 			s32 smoothFactor=0) =0;
 

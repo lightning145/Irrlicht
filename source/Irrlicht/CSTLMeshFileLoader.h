@@ -11,6 +11,10 @@
 
 namespace irr
 {
+namespace video
+{
+	class IVideoDriver;
+}
 namespace scene
 {
 
@@ -18,16 +22,18 @@ namespace scene
 class CSTLMeshFileLoader : public IMeshLoader
 {
 public:
+	//! Constructor
+	CSTLMeshFileLoader(video::IVideoDriver* pDriver);
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (i.e. ".stl")
-	virtual bool isALoadableFileExtension(const io::path& filename) const;
+	virtual bool isALoadableFileExtension(const io::path& filename) const _IRR_OVERRIDE_;
 
 	//! creates/loads an animated mesh from the file.
 	//! \return Pointer to the created mesh. Returns 0 if loading failed.
 	//! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 	//! See IReferenceCounted::drop() for more information.
-	virtual IAnimatedMesh* createMesh(io::IReadFile* file);
+	virtual IAnimatedMesh* createMesh(io::IReadFile* file) _IRR_OVERRIDE_;
 
 private:
 
@@ -40,6 +46,8 @@ private:
 
 	//! Read 3d vector of floats
 	void getNextVector(io::IReadFile* file, core::vector3df& vec, bool binary) const;
+
+	video::IVideoDriver* Driver;
 };
 
 } // end namespace scene

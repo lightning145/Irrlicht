@@ -10,6 +10,80 @@
 #include "IAnimatedMeshSceneNode.h"
 #include "os.h"
 
+namespace
+{
+	// Frames must always be increasing, so we remove objects where this isn't the case
+	// return number of kicked keys
+	template <class T> // T = objects containing a "frame" variable
+	irr::u32 dropBadKeys(irr::core::array<T>& array)
+	{
+		if (array.size()<2)
+			return 0;
+
+		irr::u32 n=1;	// new index
+		for(irr::u32 j=1;j<array.size();++j)
+		{
+			if (array[j].frame < array[n-1].frame) 
+				continue; //bad frame, unneeded and may cause problems
+			if ( n != j )
+				array[n] = array[j];
+			++n;
+		}
+		irr::u32 d = array.size()-n; // remove already copied keys
+		if ( d > 0 )
+		{
+			array.erase(n, d);
+		}
+		return d;
+	}
+	
+	// drop identical middle keys - we only need the first and last
+	// return number of kicked keys
+	template <class T, typename Cmp> // Cmp = comparison for keys of type T
+	irr::u32 dropMiddleKeys(irr::core::array<T>& array, Cmp & cmp)
+	{
+		if ( array.size() < 3 )
+			return 0;
+
+		irr::u32 s = 0; 	// old index for current key
+		irr::u32 n = 1;	// new index for next key
+		for(irr::u32 j=1;j<array.size();++j)
+		{
+			if ( cmp(array[j], array[s]) )
+				continue;	// same key, handle later
+
+			if ( j > s+1 ) // had there been identical keys?
+				array[n++] = array[j-1]; // keep the last
+			array[n++] = array[j]; // keep the new one
+			s = j;					
+		}
+		if ( array.size() > s+1 ) // identical keys at the array end?
+			array[n++] = array[array.size()-1]; // keep the last
+
+		irr::u32 d = array.size()-n; // remove already copied keys
+		if ( d > 0 )
+		{
+			array.erase(n, d);
+		}
+		return d;
+	}
+	
+	bool identicalPos(const irr::scene::ISkinnedMesh::SPositionKey& a, const irr::scene::ISkinnedMesh::SPositionKey& b)
+	{
+		return a.position == b.position;
+	}	
+	
+	bool identicalScale(const irr::scene::ISkinnedMesh::SScaleKey& a, const irr::scene::ISkinnedMesh::SScaleKey& b)
+	{
+		return a.scale == b.scale;
+	}	
+
+	bool identicalRotation(const irr::scene::ISkinnedMesh::SRotationKey& a, const irr::scene::ISkinnedMesh::SRotationKey& b)
+	{
+		return a.rotation == b.rotation;
+	}	
+};
+
 namespace irr
 {
 namespace scene
@@ -167,7 +241,7 @@ void CSkinnedMesh::buildAllLocalAnimatedMatrices()
 		{
 			joint->GlobalSkinningSpace=false;
 
-			// IRR_TEST_BROKEN_QUATERNION_USE: TODO - switched to getMatrix_transposed instead of getMatrix for downward compatibility. 
+			// IRR_TEST_BROKEN_QUATERNION_USE: TODO - switched to getMatrix_transposed instead of getMatrix for downward compatibility.
 			//								   Not tested so far if this was correct or wrong before quaternion fix!
 			joint->Animatedrotation.getMatrix_transposed(joint->LocalAnimatedMatrix);
 
@@ -466,8 +540,8 @@ void CSkinnedMesh::skinMesh()
 		{
 			for (u32 j=0; j<AllJoints[i]->AttachedMeshes.size(); ++j)
 			{
-				SSkinMeshBuffer* Buffer=(*SkinningBuffers)[ AllJoints[i]->AttachedMeshes[j] ];
-				Buffer->Transformation=AllJoints[i]->GlobalAnimatedMatrix;
+				IMeshBuffer* Buffer=(*SkinningBuffers)[ AllJoints[i]->AttachedMeshes[j] ];
+				Buffer->getTransformation()=AllJoints[i]->GlobalAnimatedMatrix;
 			}
 		}
 
@@ -497,12 +571,23 @@ void CSkinnedMesh::skinJoint(SJoint *joint, SJoint *parentJoint)
 
 		core::vector3df thisVertexMove, thisNormalMove;
 
-		core::array<scene::SSkinMeshBuffer*> &buffersUsed=*SkinningBuffers;
+		core::array<scene::IMeshBuffer*> &buffersUsed=*SkinningBuffers;
 
 		//Skin Vertices Positions and Normals...
 		for (u32 i=0; i<joint->Weights.size(); ++i)
 		{
 			SWeight& weight = joint->Weights[i];
+
+			video::IVertexAttribute* attributeP = buffersUsed[weight.buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+			video::IVertexAttribute* attributeN = buffersUsed[weight.buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+
+			if(!attributeP || !attributeN)
+				continue;
+
+			u8* Vertices = static_cast<u8*>(buffersUsed[weight.buffer_id]->getVertexBuffer()->getVertices());
+
+			u8* positionOffset = Vertices + attributeP->getOffset();
+			u8* normalOffset = Vertices + attributeN->getOffset();
 
 			// Pull this vertex...
 			jointVertexPull.transformVect(thisVertexMove, weight.StaticPos);
@@ -514,19 +599,25 @@ void CSkinnedMesh::skinJoint(SJoint *joint, SJoint *parentJoint)
 			{
 				*(weight.Moved) = true;
 
-				buffersUsed[weight.buffer_id]->getVertex(weight.vertex_id)->Pos = thisVertexMove * weight.strength;
+				core::vector3df* position = (core::vector3df*)(positionOffset + buffersUsed[weight.buffer_id]->getVertexBuffer()->getVertexSize() * weight.vertex_id);
+				core::vector3df* normal = (core::vector3df*)(normalOffset + buffersUsed[weight.buffer_id]->getVertexBuffer()->getVertexSize() * weight.vertex_id);
+
+				*position = thisVertexMove * weight.strength;
 
 				if (AnimateNormals)
-					buffersUsed[weight.buffer_id]->getVertex(weight.vertex_id)->Normal = thisNormalMove * weight.strength;
+					*normal = thisNormalMove * weight.strength;
 
 				//*(weight._Pos) = thisVertexMove * weight.strength;
 			}
 			else
 			{
-				buffersUsed[weight.buffer_id]->getVertex(weight.vertex_id)->Pos += thisVertexMove * weight.strength;
+				core::vector3df* position = (core::vector3df*)(positionOffset + buffersUsed[weight.buffer_id]->getVertexBuffer()->getVertexSize() * weight.vertex_id);
+				core::vector3df* normal = (core::vector3df*)(normalOffset + buffersUsed[weight.buffer_id]->getVertexBuffer()->getVertexSize() * weight.vertex_id);
+
+				*position += thisVertexMove * weight.strength;
 
 				if (AnimateNormals)
-					buffersUsed[weight.buffer_id]->getVertex(weight.vertex_id)->Normal += thisNormalMove * weight.strength;
+					*normal += thisNormalMove * weight.strength;
 
 				//*(weight._Pos) += thisVertexMove * weight.strength;
 			}
@@ -623,7 +714,7 @@ void CSkinnedMesh::setBoundingBox( const core::aabbox3df& box)
 void CSkinnedMesh::setMaterialFlag(video::E_MATERIAL_FLAG flag, bool newvalue)
 {
 	for (u32 i=0; i<LocalBuffers.size(); ++i)
-		LocalBuffers[i]->Material.setFlag(flag,newvalue);
+		LocalBuffers[i]->getMaterial().setFlag(flag,newvalue);
 }
 
 
@@ -693,7 +784,7 @@ void CSkinnedMesh::setInterpolationMode(E_INTERPOLATION_MODE mode)
 }
 
 
-core::array<scene::SSkinMeshBuffer*> &CSkinnedMesh::getMeshBuffers()
+core::array<scene::IMeshBuffer*> &CSkinnedMesh::getMeshBuffers()
 {
 	return LocalBuffers;
 }
@@ -718,7 +809,6 @@ bool CSkinnedMesh::setHardwareSkinning(bool on)
 	{
 		if (on)
 		{
-
 			//set mesh to static pose...
 			for (u32 i=0; i<AllJoints.size(); ++i)
 			{
@@ -727,8 +817,23 @@ bool CSkinnedMesh::setHardwareSkinning(bool on)
 				{
 					const u16 buffer_id=joint->Weights[j].buffer_id;
 					const u32 vertex_id=joint->Weights[j].vertex_id;
-					LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos = joint->Weights[j].StaticPos;
-					LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal = joint->Weights[j].StaticNormal;
+
+					video::IVertexAttribute* attributeP = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+					video::IVertexAttribute* attributeN = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+
+					if(!attributeP || !attributeN)
+						continue;
+
+					u8* Vertices = static_cast<u8*>(LocalBuffers[buffer_id]->getVertexBuffer()->getVertices());
+
+					u8* positionOffset = Vertices + attributeP->getOffset();
+					u8* normalOffset = Vertices + attributeN->getOffset();
+
+					core::vector3df* position = (core::vector3df*)(positionOffset + LocalBuffers[buffer_id]->getVertexBuffer()->getVertexSize() * vertex_id);
+					core::vector3df* normal = (core::vector3df*)(normalOffset + LocalBuffers[buffer_id]->getVertexBuffer()->getVertexSize() * vertex_id);
+
+					*position = joint->Weights[j].StaticPos;
+					*normal = joint->Weights[j].StaticNormal;
 					LocalBuffers[buffer_id]->boundingBoxNeedsRecalculated();
 				}
 			}
@@ -843,7 +948,7 @@ void CSkinnedMesh::checkForAnimation()
 					os::Printer::log("Skinned Mesh: Weight buffer id too large", ELL_WARNING);
 					joint->Weights[j].buffer_id = joint->Weights[j].vertex_id =0;
 				}
-				else if (vertex_id>=LocalBuffers[buffer_id]->getVertexCount())
+				else if (vertex_id>=LocalBuffers[buffer_id]->getVertexBuffer()->getVertexCount())
 				{
 					os::Printer::log("Skinned Mesh: Weight vertex id too large", ELL_WARNING);
 					joint->Weights[j].buffer_id = joint->Weights[j].vertex_id =0;
@@ -867,9 +972,23 @@ void CSkinnedMesh::checkForAnimation()
 				const u16 buffer_id=joint->Weights[j].buffer_id;
 				const u32 vertex_id=joint->Weights[j].vertex_id;
 
+				video::IVertexAttribute* attributeP = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+				video::IVertexAttribute* attributeN = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+
+				if(!attributeP || !attributeN)
+					continue;
+
+				u8* Vertices = static_cast<u8*>(LocalBuffers[buffer_id]->getVertexBuffer()->getVertices());
+
+				u8* positionOffset = Vertices + attributeP->getOffset();
+				u8* normalOffset = Vertices + attributeN->getOffset();
+
+				core::vector3df* position = (core::vector3df*)(positionOffset + LocalBuffers[buffer_id]->getVertexBuffer()->getVertexSize() * vertex_id);
+				core::vector3df* normal = (core::vector3df*)(normalOffset + LocalBuffers[buffer_id]->getVertexBuffer()->getVertexSize() * vertex_id);
+
 				joint->Weights[j].Moved = &Vertices_Moved[buffer_id] [vertex_id];
-				joint->Weights[j].StaticPos = LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos;
-				joint->Weights[j].StaticNormal = LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal;
+				joint->Weights[j].StaticPos = *position;
+				joint->Weights[j].StaticNormal = *normal;
 
 				//joint->Weights[j]._Pos=&Buffers[buffer_id]->getVertex(vertex_id)->Pos;
 			}
@@ -881,10 +1000,10 @@ void CSkinnedMesh::checkForAnimation()
 	SkinnedLastFrame=false;
 }
 
-
 //! called by loader after populating with mesh and bone data
 void CSkinnedMesh::finalize()
 {
+	os::Printer::log("Skinned Mesh - finalize", ELL_DEBUG);	
 	u32 i;
 
 	// Make sure we recalc the next frame
@@ -936,15 +1055,20 @@ void CSkinnedMesh::finalize()
 	for (i=0; i<LocalBuffers.size(); ++i)
 	{
 		Vertices_Moved.push_back( core::array<bool>() );
-		Vertices_Moved[i].set_used(LocalBuffers[i]->getVertexCount());
+		Vertices_Moved[i].set_used(LocalBuffers[i]->getVertexBuffer()->getVertexCount());
 	}
-
-	//Todo: optimise keys here...
 
 	checkForAnimation();
 
 	if (HasAnimation)
 	{
+		irr::u32 redundantPosKeys = 0;
+		irr::u32 unorderedPosKeys = 0;
+		irr::u32 redundantScaleKeys = 0;
+		irr::u32 unorderedScaleKeys = 0;
+		irr::u32 redundantRotationKeys = 0;
+		irr::u32 unorderedRotationKeys = 0;
+		
 		//--- optimize and check keyframes ---
 		for(i=0;i<AllJoints.size();++i)
 		{
@@ -952,78 +1076,14 @@ void CSkinnedMesh::finalize()
 			core::array<SScaleKey> &ScaleKeys = AllJoints[i]->ScaleKeys;
 			core::array<SRotationKey> &RotationKeys = AllJoints[i]->RotationKeys;
 
-			if (PositionKeys.size()>2)
-			{
-				for(u32 j=0;j<PositionKeys.size()-2;++j)
-				{
-					if (PositionKeys[j].position == PositionKeys[j+1].position && PositionKeys[j+1].position == PositionKeys[j+2].position)
-					{
-						PositionKeys.erase(j+1); //the middle key is unneeded
-						--j;
-					}
-				}
-			}
-
-			if (PositionKeys.size()>1)
-			{
-				for(u32 j=0;j<PositionKeys.size()-1;++j)
-				{
-					if (PositionKeys[j].frame >= PositionKeys[j+1].frame) //bad frame, unneed and may cause problems
-					{
-						PositionKeys.erase(j+1);
-						--j;
-					}
-				}
-			}
-
-			if (ScaleKeys.size()>2)
-			{
-				for(u32 j=0;j<ScaleKeys.size()-2;++j)
-				{
-					if (ScaleKeys[j].scale == ScaleKeys[j+1].scale && ScaleKeys[j+1].scale == ScaleKeys[j+2].scale)
-					{
-						ScaleKeys.erase(j+1); //the middle key is unneeded
-						--j;
-					}
-				}
-			}
-
-			if (ScaleKeys.size()>1)
-			{
-				for(u32 j=0;j<ScaleKeys.size()-1;++j)
-				{
-					if (ScaleKeys[j].frame >= ScaleKeys[j+1].frame) //bad frame, unneed and may cause problems
-					{
-						ScaleKeys.erase(j+1);
-						--j;
-					}
-				}
-			}
-
-			if (RotationKeys.size()>2)
-			{
-				for(u32 j=0;j<RotationKeys.size()-2;++j)
-				{
-					if (RotationKeys[j].rotation == RotationKeys[j+1].rotation && RotationKeys[j+1].rotation == RotationKeys[j+2].rotation)
-					{
-						RotationKeys.erase(j+1); //the middle key is unneeded
-						--j;
-					}
-				}
-			}
-
-			if (RotationKeys.size()>1)
-			{
-				for(u32 j=0;j<RotationKeys.size()-1;++j)
-				{
-					if (RotationKeys[j].frame >= RotationKeys[j+1].frame) //bad frame, unneed and may cause problems
-					{
-						RotationKeys.erase(j+1);
-						--j;
-					}
-				}
-			}
-
+			// redundant = identical middle keys - we only need the first and last frame
+			// unordered = frames which are out of order - we can't handle those
+			redundantPosKeys += dropMiddleKeys<SPositionKey>(PositionKeys, identicalPos);
+			unorderedPosKeys += dropBadKeys<SPositionKey>(PositionKeys);
+			redundantScaleKeys += dropMiddleKeys<SScaleKey>(ScaleKeys, identicalScale);
+			unorderedScaleKeys += dropBadKeys<SScaleKey>(ScaleKeys);
+			redundantRotationKeys += dropMiddleKeys<SRotationKey>(RotationKeys, identicalRotation);
+			unorderedRotationKeys += dropBadKeys<SRotationKey>(RotationKeys);
 
 			//Fill empty keyframe areas
 			if (PositionKeys.size())
@@ -1086,6 +1146,31 @@ void CSkinnedMesh::finalize()
 				}
 			}
 		}
+
+		if ( redundantPosKeys > 0 )
+		{
+			os::Printer::log("Skinned Mesh - redundant position frames kicked:", core::stringc(redundantPosKeys).c_str(), ELL_DEBUG);
+		}
+		if ( unorderedPosKeys > 0 )
+		{
+			irr::os::Printer::log("Skinned Mesh - unsorted position frames kicked:", irr::core::stringc(unorderedPosKeys).c_str(), irr::ELL_DEBUG);				
+		}
+		if ( redundantScaleKeys > 0 )
+		{
+			os::Printer::log("Skinned Mesh - redundant scale frames kicked:", core::stringc(redundantScaleKeys).c_str(), ELL_DEBUG);
+		}
+		if ( unorderedScaleKeys > 0 )
+		{
+			irr::os::Printer::log("Skinned Mesh - unsorted scale frames kicked:", irr::core::stringc(unorderedScaleKeys).c_str(), irr::ELL_DEBUG);
+		}
+		if ( redundantRotationKeys > 0 )
+		{
+			os::Printer::log("Skinned Mesh - redundant rotation frames kicked:", core::stringc(redundantRotationKeys).c_str(), ELL_DEBUG);
+		}
+		if ( unorderedRotationKeys > 0 )
+		{
+			irr::os::Printer::log("Skinned Mesh - unsorted rotation frames kicked:", irr::core::stringc(unorderedRotationKeys).c_str(), irr::ELL_DEBUG);
+		}
 	}
 
 	//Needed for animation and skinning...
@@ -1101,8 +1186,8 @@ void CSkinnedMesh::finalize()
 	{
 		for (u32 j=0; j<AllJoints[i]->AttachedMeshes.size(); ++j)
 		{
-			SSkinMeshBuffer* Buffer=(*SkinningBuffers)[ AllJoints[i]->AttachedMeshes[j] ];
-			Buffer->Transformation=AllJoints[i]->GlobalAnimatedMatrix;
+			IMeshBuffer* Buffer=(*SkinningBuffers)[ AllJoints[i]->AttachedMeshes[j] ];
+			Buffer->getTransformation()=AllJoints[i]->GlobalAnimatedMatrix;
 		}
 	}
 
@@ -1111,14 +1196,14 @@ void CSkinnedMesh::finalize()
 		BoundingBox.reset(0,0,0);
 	else
 	{
-		irr::core::aabbox3df bb(LocalBuffers[0]->BoundingBox);
-		LocalBuffers[0]->Transformation.transformBoxEx(bb);
+		irr::core::aabbox3df bb(LocalBuffers[0]->getBoundingBox());
+		LocalBuffers[0]->getTransformation().transformBoxEx(bb);
 		BoundingBox.reset(bb);
 
 		for (u32 j=1; j<LocalBuffers.size(); ++j)
 		{
-			bb = LocalBuffers[j]->BoundingBox;
-			LocalBuffers[j]->Transformation.transformBoxEx(bb);
+			bb = LocalBuffers[j]->getBoundingBox();
+			LocalBuffers[j]->getTransformation().transformBoxEx(bb);
 
 			BoundingBox.addInternalBox(bb);
 		}
@@ -1131,7 +1216,7 @@ void CSkinnedMesh::updateBoundingBox(void)
 	if(!SkinningBuffers)
 		return;
 
-	core::array<SSkinMeshBuffer*> & buffer = *SkinningBuffers;
+	core::array<IMeshBuffer*> & buffer = *SkinningBuffers;
 	BoundingBox.reset(0,0,0);
 
 	if (!buffer.empty())
@@ -1139,8 +1224,8 @@ void CSkinnedMesh::updateBoundingBox(void)
 		for (u32 j=0; j<buffer.size(); ++j)
 		{
 			buffer[j]->recalculateBoundingBox();
-			core::aabbox3df bb = buffer[j]->BoundingBox;
-			buffer[j]->Transformation.transformBoxEx(bb);
+			core::aabbox3df bb = buffer[j]->getBoundingBox();
+			buffer[j]->getTransformation().transformBoxEx(bb);
 
 			BoundingBox.addInternalBox(bb);
 		}
@@ -1148,11 +1233,13 @@ void CSkinnedMesh::updateBoundingBox(void)
 }
 
 
-scene::SSkinMeshBuffer *CSkinnedMesh::addMeshBuffer()
+void CSkinnedMesh::addMeshBuffer(IMeshBuffer* buffer)
 {
-	scene::SSkinMeshBuffer *buffer=new scene::SSkinMeshBuffer();
-	LocalBuffers.push_back(buffer);
-	return buffer;
+	if (buffer)
+	{
+		buffer->grab();
+		LocalBuffers.push_back(buffer);
+	}
 }
 
 
@@ -1234,7 +1321,7 @@ void CSkinnedMesh::normalizeWeights()
 	for (i=0; i<LocalBuffers.size(); ++i)
 	{
 		verticesTotalWeight.push_back(core::array<f32>());
-		verticesTotalWeight[i].set_used(LocalBuffers[i]->getVertexCount());
+		verticesTotalWeight[i].set_used(LocalBuffers[i]->getVertexBuffer()->getVertexCount());
 	}
 
 	for (i=0; i<verticesTotalWeight.size(); ++i)
@@ -1369,98 +1456,6 @@ void CSkinnedMesh::addJoints(core::array<IBoneSceneNode*> &jointChildSceneNodes,
 		bone->drop();
 	}
 	SkinnedLastFrame=false;
-}
-
-
-void CSkinnedMesh::convertMeshToTangents()
-{
-	// now calculate tangents
-	for (u32 b=0; b < LocalBuffers.size(); ++b)
-	{
-		if (LocalBuffers[b])
-		{
-			LocalBuffers[b]->convertToTangents();
-
-			const s32 idxCnt = LocalBuffers[b]->getIndexCount();
-
-			u16* idx = LocalBuffers[b]->getIndices();
-			video::S3DVertexTangents* v =
-				(video::S3DVertexTangents*)LocalBuffers[b]->getVertices();
-
-			for (s32 i=0; i<idxCnt; i+=3)
-			{
-				calculateTangents(
-					v[idx[i+0]].Normal,
-					v[idx[i+0]].Tangent,
-					v[idx[i+0]].Binormal,
-					v[idx[i+0]].Pos,
-					v[idx[i+1]].Pos,
-					v[idx[i+2]].Pos,
-					v[idx[i+0]].TCoords,
-					v[idx[i+1]].TCoords,
-					v[idx[i+2]].TCoords);
-
-				calculateTangents(
-					v[idx[i+1]].Normal,
-					v[idx[i+1]].Tangent,
-					v[idx[i+1]].Binormal,
-					v[idx[i+1]].Pos,
-					v[idx[i+2]].Pos,
-					v[idx[i+0]].Pos,
-					v[idx[i+1]].TCoords,
-					v[idx[i+2]].TCoords,
-					v[idx[i+0]].TCoords);
-
-				calculateTangents(
-					v[idx[i+2]].Normal,
-					v[idx[i+2]].Tangent,
-					v[idx[i+2]].Binormal,
-					v[idx[i+2]].Pos,
-					v[idx[i+0]].Pos,
-					v[idx[i+1]].Pos,
-					v[idx[i+2]].TCoords,
-					v[idx[i+0]].TCoords,
-					v[idx[i+1]].TCoords);
-			}
-		}
-	}
-}
-
-
-void CSkinnedMesh::calculateTangents(
-	core::vector3df& normal,
-	core::vector3df& tangent,
-	core::vector3df& binormal,
-	core::vector3df& vt1, core::vector3df& vt2, core::vector3df& vt3, // vertices
-	core::vector2df& tc1, core::vector2df& tc2, core::vector2df& tc3) // texture coords
-{
-	core::vector3df v1 = vt1 - vt2;
-	core::vector3df v2 = vt3 - vt1;
-	normal = v2.crossProduct(v1);
-	normal.normalize();
-
-	// binormal
-
-	f32 deltaX1 = tc1.X - tc2.X;
-	f32 deltaX2 = tc3.X - tc1.X;
-	binormal = (v1 * deltaX2) - (v2 * deltaX1);
-	binormal.normalize();
-
-	// tangent
-
-	f32 deltaY1 = tc1.Y - tc2.Y;
-	f32 deltaY2 = tc3.Y - tc1.Y;
-	tangent = (v1 * deltaY2) - (v2 * deltaY1);
-	tangent.normalize();
-
-	// adjust
-
-	core::vector3df txb = tangent.crossProduct(binormal);
-	if (txb.dotProduct(normal) < 0.0f)
-	{
-		tangent *= -1.0f;
-		binormal *= -1.0f;
-	}
 }
 
 

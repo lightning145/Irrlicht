@@ -20,6 +20,8 @@
 #include "EDriverFeatures.h"
 #include "SExposedVideoData.h"
 
+#include "IHardwareBuffer.h"
+
 namespace irr
 {
 namespace io
@@ -39,6 +41,7 @@ namespace scene
 
 namespace video
 {
+	class IVertexDescriptor;
 	struct S3DVertex;
 	struct S3DVertex2TCoords;
 	struct S3DVertexTangents;
@@ -77,6 +80,104 @@ namespace video
 #if _IRR_MATERIAL_MAX_TEXTURES_>7
 		//! Texture transformation
 		ETS_TEXTURE_7,
+#if _IRR_MATERIAL_MAX_TEXTURES_>8
+		//! Texture transformation
+		ETS_TEXTURE_8,
+#if _IRR_MATERIAL_MAX_TEXTURES_>9
+		//! Texture transformation
+		ETS_TEXTURE_9,
+#if _IRR_MATERIAL_MAX_TEXTURES_>10
+		//! Texture transformation
+		ETS_TEXTURE_10,
+#if _IRR_MATERIAL_MAX_TEXTURES_>11
+		//! Texture transformation
+		ETS_TEXTURE_11,
+#if _IRR_MATERIAL_MAX_TEXTURES_>12
+		//! Texture transformation
+		ETS_TEXTURE_12,
+#if _IRR_MATERIAL_MAX_TEXTURES_>13
+		//! Texture transformation
+		ETS_TEXTURE_13,
+#if _IRR_MATERIAL_MAX_TEXTURES_>14
+		//! Texture transformation
+		ETS_TEXTURE_14,
+#if _IRR_MATERIAL_MAX_TEXTURES_>15
+		//! Texture transformation
+		ETS_TEXTURE_15,
+#if _IRR_MATERIAL_MAX_TEXTURES_>16
+		//! Texture transformation
+		ETS_TEXTURE_16,
+#if _IRR_MATERIAL_MAX_TEXTURES_>17
+		//! Texture transformation
+		ETS_TEXTURE_17,
+#if _IRR_MATERIAL_MAX_TEXTURES_>18
+		//! Texture transformation
+		ETS_TEXTURE_18,
+#if _IRR_MATERIAL_MAX_TEXTURES_>19
+		//! Texture transformation
+		ETS_TEXTURE_19,
+#if _IRR_MATERIAL_MAX_TEXTURES_>20
+		//! Texture transformation
+		ETS_TEXTURE_20,
+#if _IRR_MATERIAL_MAX_TEXTURES_>21
+		//! Texture transformation
+		ETS_TEXTURE_21,
+#if _IRR_MATERIAL_MAX_TEXTURES_>22
+		//! Texture transformation
+		ETS_TEXTURE_22,
+#if _IRR_MATERIAL_MAX_TEXTURES_>23
+		//! Texture transformation
+		ETS_TEXTURE_23,
+#if _IRR_MATERIAL_MAX_TEXTURES_>24
+		//! Texture transformation
+		ETS_TEXTURE_24,
+#if _IRR_MATERIAL_MAX_TEXTURES_>25
+		//! Texture transformation
+		ETS_TEXTURE_25,
+#if _IRR_MATERIAL_MAX_TEXTURES_>26
+		//! Texture transformation
+		ETS_TEXTURE_26,
+#if _IRR_MATERIAL_MAX_TEXTURES_>27
+		//! Texture transformation
+		ETS_TEXTURE_27,
+#if _IRR_MATERIAL_MAX_TEXTURES_>28
+		//! Texture transformation
+		ETS_TEXTURE_28,
+#if _IRR_MATERIAL_MAX_TEXTURES_>29
+		//! Texture transformation
+		ETS_TEXTURE_29,
+#if _IRR_MATERIAL_MAX_TEXTURES_>30
+		//! Texture transformation
+		ETS_TEXTURE_30,
+#if _IRR_MATERIAL_MAX_TEXTURES_>31
+		//! Texture transformation
+		ETS_TEXTURE_31,
+
+
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif
@@ -197,6 +298,7 @@ namespace video
 						case EMF_COLOR_MATERIAL: material.ColorMaterial = Material.ColorMaterial; break;
 						case EMF_USE_MIP_MAPS: material.UseMipMaps = Material.UseMipMaps; break;
 						case EMF_BLEND_OPERATION: material.BlendOperation = Material.BlendOperation; break;
+						case EMF_BLEND_FACTOR: material.BlendFactor = Material.BlendFactor; break;
 						case EMF_POLYGON_OFFSET:
 							material.PolygonOffsetDirection = Material.PolygonOffsetDirection;
 							material.PolygonOffsetFactor = Material.PolygonOffsetFactor; break;
@@ -437,9 +539,7 @@ namespace video
 		\param format The color format of the render target. Floating point formats are supported.
 		\return Pointer to the created texture or 0 if the texture
 		could not be created. This pointer should not be dropped. See
-		IReferenceCounted::drop() for more information.
-		You may want to remove it from driver texture cache with removeTexture if you no longer need it.
-		*/
+		IReferenceCounted::drop() for more information. */
 		virtual ITexture* addRenderTargetTexture(const core::dimension2d<u32>& size,
 				const io::path& name = "rt", const ECOLOR_FORMAT format = ECF_UNKNOWN) =0;
 
@@ -462,11 +562,9 @@ namespace video
 		0 or another texture first. */
 		virtual void removeAllTextures() =0;
 
-		//! Remove hardware buffer
-		virtual void removeHardwareBuffer(const scene::IMeshBuffer* mb) =0;
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer) = 0;
 
-		//! Remove all hardware buffers
-		virtual void removeAllHardwareBuffers() =0;
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer) = 0;
 
 		//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */
@@ -517,7 +615,7 @@ namespace video
 		example in picture edit programs. To avoid this problem, you
 		could use the makeColorKeyTexture method, which takes the
 		position of a pixel instead a color value.
-		\param zeroTexels (deprecated) If set to true, then any texels that match
+		\param zeroTexels \deprecated If set to true, then any texels that match
 		the color key will have their color, as well as their alpha, set to zero
 		(i.e. black). This behavior matches the legacy (buggy) behavior prior
 		to release 1.5 and is provided for backwards compatibility only.
@@ -534,7 +632,7 @@ namespace video
 		\param colorKeyPixelPos Position of a pixel with the color key
 		color. Every texel with this color will become fully transparent as
 		described above.
-		\param zeroTexels (deprecated) If set to true, then any texels that match
+		\param zeroTexels \deprecated If set to true, then any texels that match
 		the color key will have their color, as well as their alpha, set to zero
 		(i.e. black). This behavior matches the legacy (buggy) behavior prior
 		to release 1.5 and is provided for backwards compatibility only.
@@ -553,7 +651,7 @@ namespace video
 		information is multiplied.*/
 		virtual void makeNormalMapTexture(video::ITexture* texture, f32 amplitude=1.0f) const =0;
 
-		//! Sets a new render target.
+		//! Sets a new render target. (this prototype will be removed in future)
 		/** This will only work if the driver supports the
 		EVDF_RENDER_TO_TARGET feature, which can be queried with
 		queryFeature(). Usually, rendering to textures is done in this
@@ -587,7 +685,32 @@ namespace video
 		\return True if sucessful and false if not. */
 		virtual bool setRenderTarget(video::ITexture* texture,
 			bool clearBackBuffer=true, bool clearZBuffer=true,
-			SColor color=video::SColor(0,0,0,0)) =0;
+			SColor color=video::SColor(0,0,0,0),
+			video::ITexture* depthStencil = 0) =0;
+
+		//! Sets a new render target.
+		virtual bool setRenderTarget(video::ITexture* texture,
+			video::ITexture* depthStencil,
+			bool clearBackBuffer=true, bool clearZBuffer=true,
+			SColor color=video::SColor(0,0,0,0))
+		{
+			return setRenderTarget(texture, clearBackBuffer, clearZBuffer, color, depthStencil);
+		}
+
+		//! Sets new multiple render targets. (this prototype will be removed in future)
+		virtual bool setRenderTarget(const core::array<video::IRenderTarget>& texture,
+			bool clearBackBuffer=true, bool clearZBuffer=true,
+			SColor color=video::SColor(0,0,0,0),
+			video::ITexture* depthStencil = 0) =0;
+
+		//! Sets new multiple render targets.
+		virtual bool setRenderTarget(const core::array<video::IRenderTarget>& texture,
+			video::ITexture* depthStencil,
+			bool clearBackBuffer=true, bool clearZBuffer=true,
+			SColor color=video::SColor(0,0,0,0))
+		{
+			return setRenderTarget(texture, clearBackBuffer, clearZBuffer, color, depthStencil);
+		}
 
 		//! set or reset special render targets
 		/** This method enables access to special color buffers such as
@@ -605,11 +728,6 @@ namespace video
 					bool clearZBuffer=true,
 					SColor color=video::SColor(0,0,0,0)) =0;
 
-		//! Sets new multiple render targets.
-		virtual bool setRenderTarget(const core::array<video::IRenderTarget>& texture,
-			bool clearBackBuffer=true, bool clearZBuffer=true,
-			SColor color=video::SColor(0,0,0,0)) =0;
-
 		//! Sets a new viewport.
 		/** Every rendering operation is done into this new area.
 		\param area: Rectangle defining the new area of rendering
@@ -619,27 +737,6 @@ namespace video
 		//! Gets the area of the current viewport.
 		/** \return Rectangle of the current viewport. */
 		virtual const core::rect<s32>& getViewPort() const =0;
-
-		//! Draws a vertex primitive list
-		/** Note that, depending on the index type, some vertices might be not
-		accessible through the index list. The limit is at 65535 vertices for 16bit
-		indices. Please note that currently not all primitives are available for
-		all drivers, and some might be emulated via triangle renders.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices. These define the vertices used
-		for each primitive. Depending on the pType, indices are interpreted as single
-		objects (for point like primitives), pairs (for lines), triplets (for
-		triangles), or quads.
-		\param primCount Amount of Primitives
-		\param vType Vertex type, e.g. video::EVT_STANDARD for S3DVertex.
-		\param pType Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
-		\param iType Index type, e.g. video::EIT_16BIT for 16bit indices. */
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primCount,
-				E_VERTEX_TYPE vType=EVT_STANDARD,
-				scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES,
-				E_INDEX_TYPE iType=EIT_16BIT) =0;
 
 		//! Draws a vertex primitive list in 2d
 		/** Compared to the general (3d) version of this method, this
@@ -653,109 +750,19 @@ namespace video
 		\param vertices Pointer to array of vertices.
 		\param vertexCount Amount of vertices in the array.
 		\param indexList Pointer to array of indices. These define the
-		vertices used for each primitive. Depending on the pType,
+		vertices used for each primitive. Depending on the type,
 		indices are interpreted as single objects (for point like
 		primitives), pairs (for lines), triplets (for triangles), or
 		quads.
 		\param primCount Amount of Primitives
 		\param vType Vertex type, e.g. video::EVT_STANDARD for S3DVertex.
-		\param pType Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
+		\param type Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
 		\param iType Index type, e.g. video::EIT_16BIT for 16bit indices. */
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primCount,
 				E_VERTEX_TYPE vType=EVT_STANDARD,
 				scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES,
 				E_INDEX_TYPE iType=EIT_16BIT) =0;
-
-		//! Draws an indexed triangle list.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices / 3. */
-		void drawIndexedTriangleList(const S3DVertex* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle list.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices / 3. */
-		void drawIndexedTriangleList(const S3DVertex2TCoords* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_2TCOORDS, scene::EPT_TRIANGLES, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle list.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices / 3. */
-		void drawIndexedTriangleList(const S3DVertexTangents* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_TANGENTS, scene::EPT_TRIANGLES, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle fan.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices - 2. */
-		void drawIndexedTriangleFan(const S3DVertex* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_STANDARD, scene::EPT_TRIANGLE_FAN, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle fan.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices - 2. */
-		void drawIndexedTriangleFan(const S3DVertex2TCoords* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_2TCOORDS, scene::EPT_TRIANGLE_FAN, EIT_16BIT);
-		}
-
-		//! Draws an indexed triangle fan.
-		/** Note that there may be at maximum 65536 vertices, because
-		the index list is an array of 16 bit values each with a maximum
-		value of 65536. If there are more than 65536 vertices in the
-		list, results of this operation are not defined.
-		\param vertices Pointer to array of vertices.
-		\param vertexCount Amount of vertices in the array.
-		\param indexList Pointer to array of indices.
-		\param triangleCount Amount of Triangles. Usually amount of indices - 2. */
-		void drawIndexedTriangleFan(const S3DVertexTangents* vertices,
-			u32 vertexCount, const u16* indexList, u32 triangleCount)
-		{
-			drawVertexPrimitiveList(vertices, vertexCount, indexList, triangleCount, EVT_TANGENTS, scene::EPT_TRIANGLE_FAN, EIT_16BIT);
-		}
 
 		//! Draws a 3d line.
 		/** For some implementations, this method simply calls
@@ -956,7 +963,7 @@ namespace video
 		\param color Color of the pixel to draw. */
 		virtual void drawPixel(u32 x, u32 y, const SColor& color) =0;
 
-		//! Draws a non filled concyclic regular 2d polygon.
+		//! Draws a non filled concyclic regular 2d polyon.
 		/** This method can be used to draw circles, but also
 		triangles, tetragons, pentagons, hexagons, heptagons, octagons,
 		enneagons, decagons, hendecagons, dodecagon, triskaidecagons,
@@ -1414,14 +1421,14 @@ namespace video
 		virtual SOverrideMaterial& getOverrideMaterial() =0;
 
 		//! Get the 2d override material for altering its values
-		/** The 2d override material allows to alter certain render
+		/** The 2d override materual allows to alter certain render
 		states of the 2d methods. Not all members of SMaterial are
 		honored, especially not MaterialType and Textures. Moreover,
 		the zbuffer is always ignored, and lighting is always off. All
 		other flags can be changed, though some might have to effect
 		in most cases.
 		Please note that you have to enable/disable this effect with
-		enableMaterial2D(). This effect is costly, as it increases
+		enableInitMaterial2D(). This effect is costly, as it increases
 		the number of state changes considerably. Always reset the
 		values when done.
 		\return Material reference which should be altered to reflect
@@ -1464,6 +1471,14 @@ namespace video
 		*/
 		virtual void convertColor(const void* sP, ECOLOR_FORMAT sF, s32 sN,
 				void* dP, ECOLOR_FORMAT dF) const =0;
+
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName) = 0;
+
+		virtual IVertexDescriptor* getVertexDescriptor(u32 id) const = 0;
+
+		virtual IVertexDescriptor* getVertexDescriptor(const core::stringc& pName) const = 0;
+
+		virtual u32 getVertexDescriptorCount() const = 0;
 	};
 
 } // end namespace video

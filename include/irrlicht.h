@@ -31,11 +31,13 @@
 
 #include "IrrCompileConfig.h"
 #include "aabbox3d.h"
-#include "CDynamicMeshBuffer.h"
+#include "IVertexDescriptor.h"
+#include "CVertexBuffer.h"
 #include "CIndexBuffer.h"
 #include "CMeshBuffer.h"
 #include "coreutil.h"
 #include "CVertexBuffer.h"
+#include "IProfiler.h"
 #include "dimension2d.h"
 #include "ECullingTypes.h"
 #include "EDebugSceneTypes.h"
@@ -65,7 +67,7 @@
 #include "ICameraSceneNode.h"
 #include "ICursorControl.h"
 #include "IDummyTransformationSceneNode.h"
-#include "IDynamicMeshBuffer.h"
+#include "IMeshBuffer.h"
 #include "IEventReceiver.h"
 #include "IFileList.h"
 #include "IFileSystem.h"
@@ -97,6 +99,7 @@
 #include "IGUIToolbar.h"
 #include "IGUIWindow.h"
 #include "IGUITreeView.h"
+#include "IGUIProfiler.h"
 #include "IImage.h"
 #include "IImageLoader.h"
 #include "IImageWriter.h"
@@ -145,6 +148,7 @@
 #include "IShadowVolumeSceneNode.h"
 #include "ISkinnedMesh.h"
 #include "ITerrainSceneNode.h"
+#include "IInstancedMeshSceneNode.h"
 #include "ITextSceneNode.h"
 #include "ITexture.h"
 #include "ITimer.h"
@@ -175,19 +179,13 @@
 #include "SLight.h"
 #include "SMaterial.h"
 #include "SMesh.h"
-#include "SMeshBuffer.h"
-#include "SMeshBufferLightMap.h"
-#include "SMeshBufferTangents.h"
 #include "SParticle.h"
-#include "SSharedMeshBuffer.h"
-#include "SSkinMeshBuffer.h"
-#include "SVertexIndex.h"
 #include "SViewFrustum.h"
 #include "triangle3d.h"
 #include "vector2d.h"
 #include "vector3d.h"
 
-/*! \mainpage Irrlicht Engine 1.8 API documentation
+/*! \mainpage Irrlicht Engine 1.9 API documentation
  *
  * <div align="center"><img src="logobig.png" ></div>
  *

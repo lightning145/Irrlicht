@@ -19,6 +19,7 @@
 #include "SceneParameters.h"
 #include "IGeometryCreator.h"
 #include "ISkinnedMesh.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -123,6 +124,7 @@ namespace scene
 	class ITextSceneNode;
 	class ITriangleSelector;
 	class IVolumeLightSceneNode;
+	class IInstancedMeshSceneNode;
 
 	namespace quake3
 	{
@@ -187,12 +189,7 @@ namespace scene
 		 *      architecture and calculating lighting. Irrlicht can
 		 *      directly import .csm files thanks to the IrrCSM library
 		 *      created by Saurav Mohapatra which is now integrated
-		 *      directly in Irrlicht. If you are using this loader,
-		 *      please note that you'll have to set the path of the
-		 *      textures before loading .csm files. You can do this
-		 *      using
-		 *      SceneManager-&gt;getParameters()-&gt;setAttribute(scene::CSM_TEXTURE_PATH,
-		 *      &quot;path/to/your/textures&quot;);</TD>
+		 *      directly in Irrlicht.
 		 *  </TR>
 		 *  <TR>
 		 *    <TD>COLLADA (.dae, .xml)</TD>
@@ -232,9 +229,8 @@ namespace scene
 		 *        game-development. With this loader, it is possible to
 		 *        directly load all geometry is as well as textures and
 		 *        lightmaps from .dmf files. To set texture and
-		 *        material paths, see scene::DMF_USE_MATERIALS_DIRS and
-		 *        scene::DMF_TEXTURE_PATH. It is also possible to flip
-		 *        the alpha texture by setting
+		 *        material paths, see scene::DMF_USE_MATERIALS_DIRS.
+		 *        It is also possible to flip the alpha texture by setting
 		 *        scene::DMF_FLIP_ALPHA_TEXTURES to true and to set the
 		 *        material transparent reference value by setting
 		 *        scene::DMF_ALPHA_CHANNEL_REF to a float between 0 and
@@ -297,12 +293,7 @@ namespace scene
 		 *        3D packages. With this built-in importer, Irrlicht
 		 *        can read and display those files directly. This
 		 *        loader was written by Zhuck Dimitry who also created
-		 *        the whole My3DTools package. If you are using this
-		 *        loader, please note that you can set the path of the
-		 *        textures before loading .my3d files. You can do this
-		 *        using
-		 *        SceneManager-&gt;getParameters()-&gt;setAttribute(scene::MY3D_TEXTURE_PATH,
-		 *        &quot;path/to/your/textures&quot;);
+		 *        the whole My3DTools package.
 		 *        </TD>
 		 *    </TR>
 		 *    <TR>
@@ -331,11 +322,7 @@ namespace scene
 		 *      <TD>LMTools is a set of tools (Windows &amp; Linux) for
 		 *        creating lightmaps. Irrlicht can directly read .lmts
 		 *        files thanks to<br> the importer created by Jonas
-		 *        Petersen. If you are using this loader, please note
-		 *        that you can set the path of the textures before
-		 *        loading .lmts files. You can do this using
-		 *        SceneManager-&gt;getParameters()-&gt;setAttribute(scene::LMTS_TEXTURE_PATH,
-		 *        &quot;path/to/your/textures&quot;);
+		 *        Petersen.
 		 *        Notes for<br> this version of the loader:<br>
 		 *        - It does not recognise/support user data in the
 		 *          *.lmts files.<br>
@@ -505,6 +492,23 @@ namespace scene
 				const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
 				bool alsoAddIfMeshPointerZero=false) = 0;
 
+		//! adds a scene node for rendering an instanced mesh model
+		/** \param mesh: Pointer to the loaded animated mesh to be displayed.
+		\param parent: Parent of the scene node. Can be NULL if no parent.
+		\param id: Id of the node. This id can be used to identify the scene node.
+		\param position: Position of the space relative to its parent where the
+		scene node will be placed.
+		\param rotation: Initital rotation of the scene node.
+		\param scale: Initial scale of the scene node.
+		\param alsoAddIfMeshPointerZero: Add the scene node even if a 0 pointer is passed.
+		\return Pointer to the created scene node.
+		This pointer should not be dropped. See IReferenceCounted::drop() for more information. */
+		virtual IInstancedMeshSceneNode* addInstancedMeshSceneNode(IMesh* mesh, ISceneNode* parent = 0, s32 id = -1,
+			const core::vector3df& position = core::vector3df(0, 0, 0),
+			const core::vector3df& rotation = core::vector3df(0, 0, 0),
+			const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
+			bool alsoAddIfMeshPointerZero = false) = 0;
+
 		//! Adds a scene node for rendering a static mesh.
 		/** \param mesh: Pointer to the loaded static mesh to be displayed.
 		\param parent: Parent of the scene node. Can be NULL if no parent.
@@ -558,15 +562,16 @@ namespace scene
 		\param alsoAddIfMeshPointerZero: Add the scene node even if a 0 pointer is passed.
 		\return Pointer to the Octree if successful, otherwise 0.
 		This pointer should not be dropped. See IReferenceCounted::drop() for more information. */
-		virtual IMeshSceneNode* addOctreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent=0,
-			s32 id=-1, s32 minimalPolysPerNode=512, bool alsoAddIfMeshPointerZero=false) = 0;
-
-		//! Adds a scene node for rendering using a octree to the scene graph.
-		/** \deprecated Use addOctreeSceneNode instead. This method may be removed by Irrlicht 1.9. */
-		_IRR_DEPRECATED_ IMeshSceneNode* addOctTreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent=0,
+		template <class T>
+		IMeshSceneNode* addOctreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent=0,
 			s32 id=-1, s32 minimalPolysPerNode=512, bool alsoAddIfMeshPointerZero=false)
 		{
-			return addOctreeSceneNode(mesh, parent, id, minimalPolysPerNode, alsoAddIfMeshPointerZero);
+			if (!alsoAddIfMeshPointerZero && (!mesh || !mesh->getFrameCount()))
+				return 0;
+
+			return addOctreeSceneNode<T>(mesh ? mesh->getMesh(0) : 0,
+						parent, id, minimalPolysPerNode,
+						alsoAddIfMeshPointerZero);
 		}
 
 		//! Adds a scene node for rendering using a octree to the scene graph.
@@ -582,15 +587,29 @@ namespace scene
 		\param alsoAddIfMeshPointerZero: Add the scene node even if a 0 pointer is passed.
 		\return Pointer to the octree if successful, otherwise 0.
 		This pointer should not be dropped. See IReferenceCounted::drop() for more information. */
-		virtual IMeshSceneNode* addOctreeSceneNode(IMesh* mesh, ISceneNode* parent=0,
-			s32 id=-1, s32 minimalPolysPerNode=256, bool alsoAddIfMeshPointerZero=false) = 0;
-
-		//! Adds a scene node for rendering using a octree to the scene graph.
-		/** \deprecated Use addOctreeSceneNode instead. This method may be removed by Irrlicht 1.9. */
-		_IRR_DEPRECATED_ IMeshSceneNode* addOctTreeSceneNode(IMesh* mesh, ISceneNode* parent=0,
+		template <class T>
+		IMeshSceneNode* addOctreeSceneNode(IMesh* mesh, ISceneNode* parent=0,
 			s32 id=-1, s32 minimalPolysPerNode=256, bool alsoAddIfMeshPointerZero=false)
 		{
-			return addOctreeSceneNode(mesh, parent, id, minimalPolysPerNode, alsoAddIfMeshPointerZero);
+			if (!alsoAddIfMeshPointerZero && !mesh)
+				return 0;
+
+			core::array<IMeshBuffer*> meshBufferA;
+
+			for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+			{
+				const IMeshBuffer* meshBuffer = mesh->getMeshBuffer(i);
+
+				if (meshBuffer->getIndexBuffer()->getIndexCount() > 0)
+				{
+					CMeshBuffer<T>* newMeshBuffer = new CMeshBuffer<T>(meshBuffer->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getType());
+
+					newMeshBuffer->getMaterial() = meshBuffer->getMaterial();
+					meshBufferA.push_back(newMeshBuffer);
+				}
+			}
+
+			return addOctreeSceneNode(meshBufferA, mesh, parent, id, minimalPolysPerNode);
 		}
 
 		//! Adds a camera scene node to the scene graph and sets it as active camera.
@@ -1433,10 +1452,7 @@ namespace scene
 
 		//! Get interface to the parameters set in this scene.
 		/** String parameters can be used by plugins and mesh loaders.
-		For example the CMS and LMTS loader want a parameter named 'CSM_TexturePath'
-		and 'LMTS_TexturePath' set to the path were attached textures can be found. See
-		CSM_TEXTURE_PATH, LMTS_TEXTURE_PATH, MY3D_TEXTURE_PATH,
-		COLLADA_CREATE_SCENE_INSTANCES, DMF_TEXTURE_PATH and DMF_USE_MATERIALS_DIRS*/
+		See	COLLADA_CREATE_SCENE_INSTANCES and DMF_USE_MATERIALS_DIRS */
 		virtual io::IAttributes* getParameters() = 0;
 
 		//! Get current render pass.
@@ -1638,6 +1654,12 @@ namespace scene
 			current callbacks manager and restore the default behavior. */
 		virtual void setLightManager(ILightManager* lightManager) = 0;
 
+		//! Get current render pass.
+		virtual E_SCENE_NODE_RENDER_PASS getCurrentRenderPass() const =0;
+
+		//! Set current render pass.
+		virtual void setCurrentRenderPass(E_SCENE_NODE_RENDER_PASS nextPass) =0;
+
 		//! Get an instance of a geometry creator.
 		/** The geometry creator provides some helper methods to create various types of
 		basic geometry. This can be useful for custom scene nodes. */
@@ -1653,6 +1675,13 @@ namespace scene
 		\return True if node is not visible in the current scene, else
 		false. */
 		virtual bool isCulled(const ISceneNode* node) const =0;
+
+		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, const core::matrix4& absoluteTransformation) const = 0;
+
+	protected:
+
+		virtual IMeshSceneNode* addOctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, IMesh* origMesh, ISceneNode* parent=0,
+			s32 id=-1, s32 minimalPolysPerNode=512) = 0;
 	};
 
 
@@ -1660,4 +1689,3 @@ namespace scene
 } // end namespace irr
 
 #endif
-

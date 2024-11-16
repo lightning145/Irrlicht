@@ -142,9 +142,12 @@ void CGUITab::deserializeAttributes(io::IAttributes* in, io::SAttributeReadWrite
 	setNumber(in->getAttributeAsInt("TabNumber"));
 	setDrawBackground(in->getAttributeAsBool("DrawBackground"));
 	setBackgroundColor(in->getAttributeAsColor("BackColor"));
-	if ( in->existsAttribute("OverrideTextColorEnabled") )
-		OverrideTextColorEnabled = in->getAttributeAsBool("OverrideTextColorEnabled");
+	bool override = in->getAttributeAsBool("OverrideTextColorEnabled");
 	setTextColor(in->getAttributeAsColor("TextColor"));
+	if ( !override )
+	{
+		OverrideTextColorEnabled = false;
+	}
 
 	if (Parent && Parent->getType() == EGUIET_TAB_CONTROL)
 	{

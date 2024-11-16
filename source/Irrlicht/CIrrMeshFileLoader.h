@@ -10,8 +10,7 @@
 #include "IVideoDriver.h"
 #include "irrString.h"
 #include "SMesh.h"
-#include "SMeshBuffer.h"
-#include "CDynamicMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "ISceneManager.h"
 
 namespace irr
@@ -30,13 +29,13 @@ public:
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (e.g. ".cob")
-	virtual bool isALoadableFileExtension(const io::path& filename) const;
+	virtual bool isALoadableFileExtension(const io::path& filename) const _IRR_OVERRIDE_;
 
 	//! creates/loads an animated mesh from the file.
 	//! \return Pointer to the created mesh. Returns 0 if loading failed.
 	//! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 	//! See IReferenceCounted::drop() for more information.
-	virtual IAnimatedMesh* createMesh(io::IReadFile* file);
+	virtual IAnimatedMesh* createMesh(io::IReadFile* file) _IRR_OVERRIDE_;
 
 private:
 
@@ -70,10 +69,10 @@ private:
 	void readFloatsInsideElement(io::IXMLReader* reader, f32* floats, u32 count);
 
 	//! read the mesh buffers
-	void readMeshBuffer(io::IXMLReader* reader, int vertexCount, CDynamicMeshBuffer* sbuffer);
+	void readMeshBuffer(io::IXMLReader* reader, int vertexCount, IMeshBuffer* sbuffer);
 
 	//! read indices
-	void readIndices(io::IXMLReader* reader, int indexCount, IIndexBuffer& indices);
+	void readIndices(io::IXMLReader* reader, int indexCount, IIndexBuffer* indices);
 
 
 	// member variables

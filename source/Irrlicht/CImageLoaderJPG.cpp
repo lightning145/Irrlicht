@@ -16,10 +16,8 @@ namespace irr
 namespace video
 {
 
-#ifdef _IRR_COMPILE_WITH_LIBJPEG_
 // Static members
 io::path CImageLoaderJPG::Filename;
-#endif
 
 //! constructor
 CImageLoaderJPG::CImageLoaderJPG()
@@ -68,7 +66,7 @@ void CImageLoaderJPG::init_source (j_decompress_ptr cinfo)
 boolean CImageLoaderJPG::fill_input_buffer (j_decompress_ptr cinfo)
 {
 	// DO NOTHING
-	return 1;
+	return TRUE;
 }
 
 
@@ -125,11 +123,14 @@ bool CImageLoaderJPG::isALoadableFileFormat(io::IReadFile* file) const
 	return false;
 	#else
 
-	if (!(file && file->seek(0)))
+	if (!file)
 		return false;
-	unsigned char header[3];
-	int headerLen = file->read(header, sizeof(header));
-	return headerLen >= 3 && !memcmp(header, "\xFF\xD8\xFF", 3);
+
+	s32 jfif = 0;
+	file->seek(6);
+	file->read(&jfif, sizeof(s32));
+	return (jfif == 0x4a464946 || jfif == 0x4649464a);
+
 	#endif
 }
 

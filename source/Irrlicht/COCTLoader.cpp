@@ -13,11 +13,12 @@
 #ifdef _IRR_COMPILE_WITH_OCT_LOADER_
 
 #include "COCTLoader.h"
+#include "CMeshTextureLoader.h"
 #include "IVideoDriver.h"
 #include "IFileSystem.h"
 #include "os.h"
 #include "SAnimatedMesh.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 #include "ISceneManager.h"
 
@@ -35,6 +36,8 @@ COCTLoader::COCTLoader(ISceneManager* smgr, io::IFileSystem* fs)
 	#endif
 	if (FileSystem)
 		FileSystem->grab();
+
+	TextureLoader = new CMeshTextureLoader( FileSystem, SceneManager->getVideoDriver() );
 }
 
 
@@ -85,6 +88,9 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 	if (!file)
 		return 0;
 
+	if ( getMeshTextureLoader() )
+		getMeshTextureLoader()->setMeshFile(file);
+
 	octHeader header;
 	file->read(&header, sizeof(octHeader));
 
@@ -122,10 +128,10 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 	SMesh * Mesh = new SMesh();
 	for (i=0; i<(header.numTextures+1) * (header.numLightmaps+1); ++i)
 	{
-		scene::SMeshBufferLightMap* buffer = new scene::SMeshBufferLightMap();
+		CMeshBuffer<video::S3DVertex2TCoords>* buffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
 
-		buffer->Material.MaterialType = video::EMT_LIGHTMAP;
-		buffer->Material.Lighting = false;
+		buffer->getMaterial().MaterialType = video::EMT_LIGHTMAP;
+		buffer->getMaterial().Lighting = false;
 		Mesh->addMeshBuffer(buffer);
 		buffer->drop();
 	}
@@ -145,8 +151,8 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 
 		const u32 textureID = core::min_(s32(faces[i].textureID), s32(header.numTextures - 1)) + 1;
 		const u32 lightmapID = core::min_(s32(faces[i].lightmapID),s32(header.numLightmaps - 1)) + 1;
-		SMeshBufferLightMap * meshBuffer = (SMeshBufferLightMap*)Mesh->getMeshBuffer(lightmapID * (header.numTextures + 1) + textureID);
-		const u32 base = meshBuffer->Vertices.size();
+		CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer = (CMeshBuffer<video::S3DVertex2TCoords>*)Mesh->getMeshBuffer(lightmapID * (header.numTextures + 1) + textureID);
+		const u32 base = meshBuffer->getVertexBuffer()->getVertexCount();
 
 		// Add this face's verts
 		u32 v;
@@ -170,7 +176,7 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 				vert.TCoords2.set(vv->lc[0], vv->lc[1]);
 			}
 
-			meshBuffer->Vertices.push_back(vert);
+			meshBuffer->getVertexBuffer()->addVertex(&vert);
 		}
 
 		// Now add the indices
@@ -183,9 +189,9 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 		{
 			const u32 center = (v & 1)? h - 1: l + 1;
 
-			meshBuffer->Indices.push_back(base + h);
-			meshBuffer->Indices.push_back(base + l);
-			meshBuffer->Indices.push_back(base + center);
+			meshBuffer->getIndexBuffer()->addIndex(base + h);
+			meshBuffer->getIndexBuffer()->addIndex(base + l);
+			meshBuffer->getIndexBuffer()->addIndex(base + center);
 
 			if (v & 1)
 				--h;
@@ -199,16 +205,9 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 	tex.reallocate(header.numTextures + 1);
 	tex.push_back(0);
 
-	const core::stringc relpath = FileSystem->getFileDir(file->getFileName())+"/";
 	for (i = 1; i < (header.numTextures + 1); i++)
 	{
-		core::stringc path(textures[i-1].fileName);
-		path.replace('\\','/');
-		if (FileSystem->existFile(path))
-			tex.push_back(SceneManager->getVideoDriver()->getTexture(path));
-		else
-			// try to read in the relative path of the OCT file
-			tex.push_back(SceneManager->getVideoDriver()->getTexture( (relpath + path) ));
+		tex.push_back( getMeshTextureLoader() ? getMeshTextureLoader()->getTexture(textures[i-1].fileName) : NULL );
 	}
 
 	// prepare lightmaps
@@ -262,23 +261,23 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 		for (u32 j = 0; j < header.numTextures + 1; j++)
 		{
 			u32 mb = i * (header.numTextures + 1) + j;
-			SMeshBufferLightMap * meshBuffer = (SMeshBufferLightMap*)Mesh->getMeshBuffer(mb);
-			meshBuffer->Material.setTexture(0, tex[j]);
-			meshBuffer->Material.setTexture(1, lig[i]);
+			CMeshBuffer<video::S3DVertex2TCoords> * meshBuffer = (CMeshBuffer<video::S3DVertex2TCoords>*)Mesh->getMeshBuffer(mb);
+			meshBuffer->getMaterial().setTexture(0, tex[j]);
+			meshBuffer->getMaterial().setTexture(1, lig[i]);
 
-			if (meshBuffer->Material.getTexture(0) == 0)
+			if (meshBuffer->getMaterial().getTexture(0) == 0)
 			{
 				// This material has no texture, so we'll just show the lightmap if there is one.
 				// We swapped the texture coordinates earlier.
-				meshBuffer->Material.setTexture(0, meshBuffer->Material.getTexture(1));
-				meshBuffer->Material.setTexture(1, 0);
+				meshBuffer->getMaterial().setTexture(0, meshBuffer->getMaterial().getTexture(1));
+				meshBuffer->getMaterial().setTexture(1, 0);
 			}
-			if (meshBuffer->Material.getTexture(1) == 0)
+			if (meshBuffer->getMaterial().getTexture(1) == 0)
 			{
 				// If there is only one texture, it should be solid and lit.
 				// Among other things, this way you can preview OCT lights.
-				meshBuffer->Material.MaterialType = video::EMT_SOLID;
-				meshBuffer->Material.Lighting = true;
+				meshBuffer->getMaterial().MaterialType = video::EMT_SOLID;
+				meshBuffer->getMaterial().Lighting = true;
 			}
 		}
 	}
@@ -287,8 +286,8 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 	i = 0;
 	while(i < Mesh->MeshBuffers.size())
 	{
-		if (Mesh->MeshBuffers[i]->getVertexCount() == 0 ||
-			Mesh->MeshBuffers[i]->getIndexCount() == 0 ||
+		if (Mesh->MeshBuffers[i]->getVertexBuffer()->getVertexCount() == 0 ||
+			Mesh->MeshBuffers[i]->getIndexBuffer()->getIndexCount() == 0 ||
 			Mesh->MeshBuffers[i]->getMaterial().getTexture(0) == 0)
 		{
 			// Meshbuffer is empty -- drop it

@@ -9,6 +9,10 @@
 
 namespace irr
 {
+namespace video
+{
+	class IVideoDriver;
+}
 namespace scene
 {
 
@@ -20,22 +24,23 @@ class CMD2MeshFileLoader : public IMeshLoader
 public:
 
 	//! Constructor
-	CMD2MeshFileLoader();
+	CMD2MeshFileLoader(video::IVideoDriver* pDriver);
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (e.g. ".bsp")
-	virtual bool isALoadableFileExtension(const io::path& filename) const;
+	virtual bool isALoadableFileExtension(const io::path& filename) const _IRR_OVERRIDE_;
 
 	//! creates/loads an animated mesh from the file.
 	//! \return Pointer to the created mesh. Returns 0 if loading failed.
 	//! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 	//! See IReferenceCounted::drop() for more information.
-	virtual IAnimatedMesh* createMesh(io::IReadFile* file);
+	virtual IAnimatedMesh* createMesh(io::IReadFile* file) _IRR_OVERRIDE_;
 
 private:
 	//! Loads the file data into the mesh
 	bool loadFile(io::IReadFile* file, CAnimatedMeshMD2* mesh);
 
+	video::IVideoDriver* Driver;
 };
 
 } // end namespace scene

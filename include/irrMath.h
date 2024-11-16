@@ -53,19 +53,19 @@ namespace core
 #undef PI
 #endif
 	//! Constant for PI.
-	const f32 PI		= 3.14159265359f;
+	const f32 PI = 3.14159265359f;
 
 	//! Constant for reciprocal of PI.
-	const f32 RECIPROCAL_PI	= 1.0f/PI;
+	const f32 RECIPROCAL_PI = 1.0f/PI;
 
 	//! Constant for half of PI.
-	const f32 HALF_PI	= PI/2.0f;
+	const f32 HALF_PI = PI/2.0f;
 
 #ifdef PI64 // make sure we don't collide with a define
 #undef PI64
 #endif
 	//! Constant for 64bit PI.
-	const f64 PI64		= 3.1415926535897932384626433832795028841971693993751;
+	const f64 PI64 = 3.1415926535897932384626433832795028841971693993751;
 
 	//! Constant for 64bit reciprocal of PI.
 	const f64 RECIPROCAL_PI64 = 1.0/PI64;
@@ -84,7 +84,7 @@ namespace core
 
 	//! Utility function to convert a radian value to degrees
 	/** Provided as it can be clearer to write radToDeg(X) than RADTODEG * X
-	\param radians	The radians value to convert to degrees.
+	\param radians The radians value to convert to degrees.
 	*/
 	inline f32 radToDeg(f32 radians)
 	{
@@ -93,7 +93,7 @@ namespace core
 
 	//! Utility function to convert a radian value to degrees
 	/** Provided as it can be clearer to write radToDeg(X) than RADTODEG * X
-	\param radians	The radians value to convert to degrees.
+	\param radians The radians value to convert to degrees.
 	*/
 	inline f64 radToDeg(f64 radians)
 	{
@@ -102,7 +102,7 @@ namespace core
 
 	//! Utility function to convert a degrees value to radians
 	/** Provided as it can be clearer to write degToRad(X) than DEGTORAD * X
-	\param degrees	The degrees value to convert to radians.
+	\param degrees The degrees value to convert to radians.
 	*/
 	inline f32 degToRad(f32 degrees)
 	{
@@ -111,7 +111,7 @@ namespace core
 
 	//! Utility function to convert a degrees value to radians
 	/** Provided as it can be clearer to write degToRad(X) than DEGTORAD * X
-	\param degrees	The degrees value to convert to radians.
+	\param degrees The degrees value to convert to radians.
 	*/
 	inline f64 degToRad(f64 degrees)
 	{
@@ -348,26 +348,26 @@ namespace core
 	//! code is taken from IceFPU
 	//! Integer representation of a floating-point value.
 #ifdef IRRLICHT_FAST_MATH
-	#define IR(x)                           ((u32&)(x))
+	#define IR(x)			((u32&)(x))
 #else
 	inline u32 IR(f32 x) {inttofloat tmp; tmp.f=x; return tmp.u;}
 #endif
 
 	//! Absolute integer representation of a floating-point value
-	#define AIR(x)				(IR(x)&0x7fffffff)
+	#define AIR(x)			(IR(x)&0x7fffffff)
 
 	//! Floating-point representation of an integer value.
 #ifdef IRRLICHT_FAST_MATH
-	#define FR(x)                           ((f32&)(x))
+	#define FR(x)			((f32&)(x))
 #else
 	inline f32 FR(u32 x) {inttofloat tmp; tmp.u=x; return tmp.f;}
 	inline f32 FR(s32 x) {inttofloat tmp; tmp.s=x; return tmp.f;}
 #endif
 
 	//! integer representation of 1.0
-	#define IEEE_1_0			0x3f800000
+	#define IEEE_1_0		0x3f800000
 	//! integer representation of 255.0
-	#define IEEE_255_0			0x437f0000
+	#define IEEE_255_0		0x437f0000
 
 #ifdef IRRLICHT_FAST_MATH
 	#define	F32_LOWER_0(f)		(F32_AS_U32(f) >  F32_SIGN_BIT)
@@ -455,15 +455,13 @@ namespace core
 	{
 #ifdef IRRLICHT_FAST_MATH
 		return;
-#ifdef feclearexcept
+	#ifdef feclearexcept
 		feclearexcept(FE_ALL_EXCEPT);
-#elif defined(_MSC_VER)
+	#elif defined(_MSC_VER)
 		__asm fnclex;
-#elif defined(__GNUC__) && defined(__x86__)
+	#elif defined(__GNUC__) && defined(__x86__)
 		__asm__ __volatile__ ("fclex \n\t");
-#else
-#  warn clearFPUException not supported.
-#endif
+	#endif
 #endif
 	}
 
@@ -540,6 +538,7 @@ namespace core
 		// bi ts of the mantissa
 		// One Newtown-Raphson Iteration:
 		// f(i+1) = 2 * rcpss(f) - f * rcpss(f) * rcpss(f)
+#if defined(_MSC_VER)				
 		f32 rec;
 		__asm rcpss xmm0, f               // xmm0 = rcpss(f)
 		__asm movss xmm1, f               // xmm1 = f
@@ -550,8 +549,9 @@ namespace core
 										  //        - f * rcpss(f) * rcpss(f)
 		__asm movss rec, xmm0             // return xmm0
 		return rec;
-
-
+#else // no support yet for other compilers
+		return 1.f / f;
+#endif
 		//! i do not divide through 0.. (fpu expection)
 		// instead set f to a high value to get a return value near zero..
 		// -1000000000000.f.. is use minus to stay negative..
@@ -580,6 +580,7 @@ namespace core
 		// bi ts of the mantissa
 		// One Newtown-Raphson Iteration:
 		// f(i+1) = 2 * rcpss(f) - f * rcpss(f) * rcpss(f)
+#if defined(_MSC_VER)		
 		f32 rec;
 		__asm rcpss xmm0, f               // xmm0 = rcpss(f)
 		__asm movss xmm1, f               // xmm1 = f
@@ -590,7 +591,9 @@ namespace core
 										  //        - f * rcpss(f) * rcpss(f)
 		__asm movss rec, xmm0             // return xmm0
 		return rec;
-
+#else // no support yet for other compilers
+		return 1.f / f;
+#endif
 
 /*
 		// SSE reciprocal estimate, accurate to 12 significant bits of
@@ -633,7 +636,6 @@ namespace core
 			: "st"
 			);
 #else
-#  warn IRRLICHT_FAST_MATH not supported.
 		return (s32) floorf ( x );
 #endif
 		return t;
@@ -666,7 +668,6 @@ namespace core
 			: "st"
 			);
 #else
-#  warn IRRLICHT_FAST_MATH not supported.
 		return (s32) ceilf ( x );
 #endif
 		return t;
@@ -696,7 +697,6 @@ namespace core
 			: "st"
 			);
 #else
-#  warn IRRLICHT_FAST_MATH not supported.
 		return (s32) round_(x);
 #endif
 		return t;

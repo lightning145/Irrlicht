@@ -31,13 +31,13 @@ public:
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (e.g. ".cob")
-	virtual bool isALoadableFileExtension(const io::path& filename) const;
+	virtual bool isALoadableFileExtension(const io::path& filename) const _IRR_OVERRIDE_;
 
 	//! creates/loads an animated mesh from the file.
 	//! \return Pointer to the created mesh. Returns 0 if loading failed.
 	//! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 	//! See IReferenceCounted::drop() for more information.
-	virtual IAnimatedMesh* createMesh(io::IReadFile* file);
+	virtual IAnimatedMesh* createMesh(io::IReadFile* file) _IRR_OVERRIDE_;
 
 	struct SXTemplateMaterial
 	{
@@ -64,7 +64,7 @@ public:
 
 		core::array<u16> IndexCountPerFace; // default 3, but could be more
 
-		core::array<scene::SSkinMeshBuffer*> Buffers;
+		core::array<scene::IMeshBuffer*> Buffers;
 
 		core::array<video::S3DVertex> Vertices;
 		core::array<core::vector2df> TCoords2;
@@ -167,8 +167,6 @@ private:
 
 	ISceneManager* SceneManager;
 	io::IFileSystem* FileSystem;
-
-	core::array<CSkinnedMesh::SJoint*> *AllJoints;
 
 	CSkinnedMesh* AnimatedMesh;
 

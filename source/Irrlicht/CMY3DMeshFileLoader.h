@@ -32,7 +32,7 @@
 
 #include "IMeshLoader.h"
 #include "SMesh.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "IFileSystem.h"
 #include "IVideoDriver.h"
 #include "irrString.h"
@@ -75,9 +75,9 @@ public:
 	CMY3DMeshFileLoader(ISceneManager *scmgr, io::IFileSystem* fs);
 	virtual ~CMY3DMeshFileLoader();
 
-	virtual bool isALoadableFileExtension(const io::path& filename) const;
+	virtual bool isALoadableFileExtension(const io::path& filename) const _IRR_OVERRIDE_;
 
-	virtual IAnimatedMesh* createMesh(io::IReadFile* file);
+	virtual IAnimatedMesh* createMesh(io::IReadFile* file) _IRR_OVERRIDE_;
 
 	//! getting access to the nodes (with transparent material), creating
 	//! while loading .my3d file
@@ -107,15 +107,15 @@ private:
 	struct SMyMeshBufferEntry
 	{
 		SMyMeshBufferEntry() : MaterialIndex(-1), MeshBuffer(0) {}
-		SMyMeshBufferEntry(s32 mi, SMeshBufferLightMap* mb)
+		SMyMeshBufferEntry(s32 mi, CMeshBuffer<video::S3DVertex2TCoords>* mb)
 			: MaterialIndex(mi), MeshBuffer(mb) {}
 
 		s32 MaterialIndex;
-		SMeshBufferLightMap* MeshBuffer;
+		CMeshBuffer<video::S3DVertex2TCoords>* MeshBuffer;
 	};
 
 	SMyMaterialEntry*    getMaterialEntryByIndex     (u32 matInd);
-	SMeshBufferLightMap* getMeshBufferByMaterialIndex(u32 matInd);
+	CMeshBuffer<video::S3DVertex2TCoords>* getMeshBufferByMaterialIndex(u32 matInd);
 
 	core::array<SMyMaterialEntry>   MaterialEntry;
 	core::array<SMyMeshBufferEntry> MeshBufferEntry;

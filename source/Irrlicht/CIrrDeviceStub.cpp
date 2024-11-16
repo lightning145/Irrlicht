@@ -55,16 +55,18 @@ CIrrDeviceStub::CIrrDeviceStub(const SIrrlichtCreationParameters& params)
 CIrrDeviceStub::~CIrrDeviceStub()
 {
 	VideoModeList->drop();
-	FileSystem->drop();
 
 	if (GUIEnvironment)
 		GUIEnvironment->drop();
 
+	if (SceneManager)
+		SceneManager->drop();
+	
 	if (VideoDriver)
 		VideoDriver->drop();
 
-	if (SceneManager)
-		SceneManager->drop();
+	if ( FileSystem )
+		FileSystem->drop();
 
 	if (InputReceivingSceneManager)
 		InputReceivingSceneManager->drop();
@@ -324,8 +326,8 @@ IRandomizer* CIrrDeviceStub::createDefaultRandomizer() const
 //! Sets the input receiving scene manager.
 void CIrrDeviceStub::setInputReceivingSceneManager(scene::ISceneManager* sceneManager)
 {
-	if (sceneManager)
-		sceneManager->grab();
+    if (sceneManager)
+        sceneManager->grab();
 	if (InputReceivingSceneManager)
 		InputReceivingSceneManager->drop();
 

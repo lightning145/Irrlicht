@@ -7,6 +7,7 @@
 #ifdef _IRR_COMPILE_WITH_X_LOADER_
 
 #include "CXMeshFileLoader.h"
+#include "CMeshTextureLoader.h"
 #include "os.h"
 
 #include "fast_atof.h"
@@ -28,13 +29,15 @@ namespace scene
 
 //! Constructor
 CXMeshFileLoader::CXMeshFileLoader(scene::ISceneManager* smgr, io::IFileSystem* fs)
-: SceneManager(smgr), FileSystem(fs), AllJoints(0), AnimatedMesh(0),
+: SceneManager(smgr), FileSystem(fs), AnimatedMesh(0),
 	Buffer(0), P(0), End(0), BinaryNumCount(0), Line(0),
 	CurFrame(0), MajorVersion(0), MinorVersion(0), BinaryFormat(false), FloatSize(0)
 {
 	#ifdef _DEBUG
 	setDebugName("CXMeshFileLoader");
 	#endif
+
+	TextureLoader = new CMeshTextureLoader( FileSystem, SceneManager->getVideoDriver() );
 }
 
 
@@ -50,10 +53,13 @@ bool CXMeshFileLoader::isALoadableFileExtension(const io::path& filename) const
 //! \return Pointer to the created mesh. Returns 0 if loading failed.
 //! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 //! See IReferenceCounted::drop() for more information.
-IAnimatedMesh* CXMeshFileLoader::createMesh(io::IReadFile* f)
+IAnimatedMesh* CXMeshFileLoader::createMesh(io::IReadFile* file)
 {
-	if (!f)
+	if (!file)
 		return 0;
+
+	if ( getMeshTextureLoader() )
+		getMeshTextureLoader()->setMeshFile(file);
 
 #ifdef _XREADER_DEBUG
 	u32 time = os::Timer::getRealTime();
@@ -61,7 +67,7 @@ IAnimatedMesh* CXMeshFileLoader::createMesh(io::IReadFile* f)
 
 	AnimatedMesh = new CSkinnedMesh();
 
-	if (load(f))
+	if (load(file))
 	{
 		AnimatedMesh->finalize();
 	}
@@ -132,8 +138,17 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 #endif
 		for (i=0; i<mesh->Materials.size(); ++i)
 		{
-			mesh->Buffers.push_back( AnimatedMesh->addMeshBuffer() );
-			mesh->Buffers.getLast()->Material = mesh->Materials[i];
+			IMeshBuffer* meshBuffer = 0;
+
+			if (mesh->TCoords2.size())
+				meshBuffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
+			else
+				meshBuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
+
+			AnimatedMesh->addMeshBuffer(meshBuffer);
+
+			mesh->Buffers.push_back(meshBuffer);
+			mesh->Buffers.getLast()->getMaterial() = mesh->Materials[i];
 
 			if (!mesh->HasSkinning)
 			{
@@ -143,6 +158,8 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 					AnimatedMesh->getAllJoints()[mesh->AttachedJointID]->AttachedMeshes.push_back( AnimatedMesh->getMeshBuffers().size()-1 );
 				}
 			}
+
+			meshBuffer->drop();
 		}
 
 		if (!mesh->FaceMaterialIndices.size())
@@ -158,7 +175,7 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 			{
 				for (u32 id=j*3+0;id<=j*3+2;++id)
 				{
-					mesh->Vertices[ mesh->Indices[id] ].Color = mesh->Buffers[mesh->FaceMaterialIndices[j]]->Material.DiffuseColor;
+					mesh->Vertices[ mesh->Indices[id] ].Color = mesh->Buffers[mesh->FaceMaterialIndices[j]]->getMaterial().DiffuseColor;
 				}
 			}
 		}
@@ -311,19 +328,9 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 					if (verticesLinkBuffer[i] != -1)
 						++vCountArray[verticesLinkBuffer[i]];
 				}
-				if (mesh->TCoords2.size())
-				{
-					for (i=0; i!=mesh->Buffers.size(); ++i)
-					{
-						mesh->Buffers[i]->Vertices_2TCoords.reallocate(vCountArray[i]);
-						mesh->Buffers[i]->VertexType=video::EVT_2TCOORDS;
-					}
-				}
-				else
-				{
-					for (i=0; i!=mesh->Buffers.size(); ++i)
-						mesh->Buffers[i]->Vertices_Standard.reallocate(vCountArray[i]);
-				}
+
+				for (i=0; i!=mesh->Buffers.size(); ++i)
+					mesh->Buffers[i]->getVertexBuffer()->reallocate(vCountArray[i]);
 
 				verticesLinkIndex.set_used(mesh->Vertices.size());
 				// actually store vertices
@@ -332,21 +339,20 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 					// if a vertex is missing for some reason, just skip it
 					if (verticesLinkBuffer[i]==-1)
 						continue;
-					scene::SSkinMeshBuffer *buffer = mesh->Buffers[ verticesLinkBuffer[i] ];
+					scene::IMeshBuffer *buffer = mesh->Buffers[ verticesLinkBuffer[i] ];
+
+					verticesLinkIndex[i] = buffer->getVertexBuffer()->getVertexCount();
 
 					if (mesh->TCoords2.size())
 					{
-						verticesLinkIndex[i] = buffer->Vertices_2TCoords.size();
-						buffer->Vertices_2TCoords.push_back( mesh->Vertices[i] );
+						buffer->getVertexBuffer()->addVertex( &mesh->Vertices[i] );
 						// We have a problem with correct tcoord2 handling here
 						// crash fixed for now by checking the values
-						buffer->Vertices_2TCoords.getLast().TCoords2=(i<mesh->TCoords2.size())?mesh->TCoords2[i]:mesh->Vertices[i].TCoords;
+						video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
+						Vertices[buffer->getVertexBuffer()->getVertexCount()-1].TCoords2=(i<mesh->TCoords2.size())?mesh->TCoords2[i]:mesh->Vertices[i].TCoords;
 					}
 					else
-					{
-						verticesLinkIndex[i] = buffer->Vertices_Standard.size();
-						buffer->Vertices_Standard.push_back( mesh->Vertices[i] );
-					}
+						buffer->getVertexBuffer()->addVertex( &mesh->Vertices[i] );
 				}
 
 				// count indices per buffer and reallocate
@@ -354,15 +360,15 @@ bool CXMeshFileLoader::load(io::IReadFile* file)
 				for (i=0; i<mesh->FaceMaterialIndices.size(); ++i)
 					++vCountArray[ mesh->FaceMaterialIndices[i] ];
 				for (i=0; i!=mesh->Buffers.size(); ++i)
-					mesh->Buffers[i]->Indices.reallocate(vCountArray[i]);
+					mesh->Buffers[i]->getIndexBuffer()->reallocate(vCountArray[i]);
 				delete [] vCountArray;
 				// create indices per buffer
 				for (i=0; i<mesh->FaceMaterialIndices.size(); ++i)
 				{
-					scene::SSkinMeshBuffer *buffer = mesh->Buffers[ mesh->FaceMaterialIndices[i] ];
+					IMeshBuffer *buffer = mesh->Buffers[ mesh->FaceMaterialIndices[i] ];
 					for (u32 id=i*3+0; id!=i*3+3; ++id)
 					{
-						buffer->Indices.push_back( verticesLinkIndex[ mesh->Indices[id] ] );
+						buffer->getIndexBuffer()->addIndex( verticesLinkIndex[ mesh->Indices[id] ] );
 					}
 				}
 			}
@@ -458,7 +464,6 @@ bool CXMeshFileLoader::readFileIntoMemory(io::IReadFile* file)
 	P = &Buffer[16];
 
 	readUntilEndOfLine();
-	FilePath = FileSystem->getFileDir(file->getFileName()) + "/";
 
 	return true;
 }
@@ -1524,19 +1529,8 @@ bool CXMeshFileLoader::parseDataObjectMaterial(video::SMaterial& material)
 			if (!parseDataObjectTextureFilename(TextureFileName))
 				return false;
 
-			// original name
-			if (FileSystem->existFile(TextureFileName))
-				material.setTexture(textureLayer, SceneManager->getVideoDriver()->getTexture(TextureFileName));
-			// mesh path
-			else
-			{
-				TextureFileName=FilePath + FileSystem->getFileBasename(TextureFileName);
-				if (FileSystem->existFile(TextureFileName))
-					material.setTexture(textureLayer, SceneManager->getVideoDriver()->getTexture(TextureFileName));
-				// working directory
-				else
-					material.setTexture(textureLayer, SceneManager->getVideoDriver()->getTexture(FileSystem->getFileBasename(TextureFileName)));
-			}
+			material.setTexture( textureLayer, getMeshTextureLoader() ? getMeshTextureLoader()->getTexture(TextureFileName) : NULL );
+
 			++textureLayer;
 			if (textureLayer==2)
 				material.MaterialType=video::EMT_LIGHTMAP;
@@ -1549,19 +1543,8 @@ bool CXMeshFileLoader::parseDataObjectMaterial(video::SMaterial& material)
 			if (!parseDataObjectTextureFilename(TextureFileName))
 				return false;
 
-			// original name
-			if (FileSystem->existFile(TextureFileName))
-				material.setTexture(1, SceneManager->getVideoDriver()->getTexture(TextureFileName));
-			// mesh path
-			else
-			{
-				TextureFileName=FilePath + FileSystem->getFileBasename(TextureFileName);
-				if (FileSystem->existFile(TextureFileName))
-					material.setTexture(1, SceneManager->getVideoDriver()->getTexture(TextureFileName));
-				// working directory
-				else
-					material.setTexture(1, SceneManager->getVideoDriver()->getTexture(FileSystem->getFileBasename(TextureFileName)));
-			}
+			material.setTexture( 1, getMeshTextureLoader() ? getMeshTextureLoader()->getTexture(TextureFileName) : NULL );
+
 			if (textureLayer==1)
 				++textureLayer;
 		}
@@ -1810,7 +1793,6 @@ bool CXMeshFileLoader::parseDataObjectAnimationKey(ISkinnedMesh::SJoint *joint)
 				ISkinnedMesh::SRotationKey *key=AnimatedMesh->addRotationKey(joint);
 				key->frame=time;
 				key->rotation.set(X,Y,Z,W);
-				key->rotation.normalize();
 			}
 			break;
 		case 1: //scale
@@ -1879,8 +1861,8 @@ bool CXMeshFileLoader::parseDataObjectAnimationKey(ISkinnedMesh::SJoint *joint)
 				ISkinnedMesh::SRotationKey *keyR=AnimatedMesh->addRotationKey(joint);
 				keyR->frame=time;
 
-				// IRR_TEST_BROKEN_QUATERNION_USE: TODO - switched from mat to mat.getTransposed() for downward compatibility. 
-				//								   Not tested so far if this was correct or wrong before quaternion fix!
+				// IRR_TEST_BROKEN_QUATERNION_USE: TODO - switched from mat to mat.getTransposed() for downward compatibility.
+				// Not tested so far if this was correct or wrong before quaternion fix!
 				keyR->rotation= core::quaternion(mat.getTransposed());
 
 				ISkinnedMesh::SPositionKey *keyP=AnimatedMesh->addPositionKey(joint);

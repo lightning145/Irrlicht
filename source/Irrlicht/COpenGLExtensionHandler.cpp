@@ -47,10 +47,13 @@ COpenGLExtensionHandler::COpenGLExtensionHandler() :
 	pGlUniform1ivARB(0), pGlUniform2ivARB(0), pGlUniform3ivARB(0), pGlUniform4ivARB(0),
 	pGlUniformMatrix2fvARB(0), pGlUniformMatrix3fvARB(0), pGlUniformMatrix4fvARB(0),
 	pGlGetActiveUniformARB(0), pGlGetActiveUniform(0),
+	pGlDisableVertexAttribArray(0), pGlEnableVertexAttribArray(0),
+	pGlGetAttribLocation(0), pGlVertexAttribPointer(0),
+
 	pGlPointParameterfARB(0), pGlPointParameterfvARB(0),
 	pGlStencilFuncSeparate(0), pGlStencilOpSeparate(0),
 	pGlStencilFuncSeparateATI(0), pGlStencilOpSeparateATI(0),
-	pGlCompressedTexImage2D(0),
+	pGlCompressedTexImage2D(0), pGlCompressedTexSubImage2D(0),
 	// ARB framebuffer object
 	pGlBindFramebuffer(0), pGlDeleteFramebuffers(0), pGlGenFramebuffers(0),
 	pGlCheckFramebufferStatus(0), pGlFramebufferTexture2D(0),
@@ -67,9 +70,6 @@ COpenGLExtensionHandler::COpenGLExtensionHandler() :
 	pGlBufferSubDataARB(0), pGlGetBufferSubDataARB(0), pGlMapBufferARB(0), pGlUnmapBufferARB(0),
 	pGlIsBufferARB(0), pGlGetBufferParameterivARB(0), pGlGetBufferPointervARB(0),
 	pGlProvokingVertexARB(0), pGlProvokingVertexEXT(0),
-	pGlColorMaskIndexedEXT(0), pGlEnableIndexedEXT(0), pGlDisableIndexedEXT(0),
-	pGlBlendFuncIndexedAMD(0), pGlBlendFunciARB(0),
-	pGlBlendEquationIndexedAMD(0), pGlBlendEquationiARB(0),
 	pGlProgramParameteriARB(0), pGlProgramParameteriEXT(0),
 	pGlGenQueriesARB(0), pGlDeleteQueriesARB(0), pGlIsQueryARB(0),
 	pGlBeginQueryARB(0), pGlEndQueryARB(0), pGlGetQueryivARB(0),
@@ -78,7 +78,14 @@ COpenGLExtensionHandler::COpenGLExtensionHandler() :
 	pGlIsOcclusionQueryNV(0), pGlBeginOcclusionQueryNV(0),
 	pGlEndOcclusionQueryNV(0), pGlGetOcclusionQueryivNV(0),
 	pGlGetOcclusionQueryuivNV(0),
-	pGlBlendEquationEXT(0), pGlBlendEquation(0)
+	// Blend
+	pGlBlendFuncSeparateEXT(0), pGlBlendFuncSeparate(0),
+	pGlBlendEquationEXT(0), pGlBlendEquation(0), pGlBlendEquationSeparateEXT(0), pGlBlendEquationSeparate(0),
+	// Indexed
+	pGlEnableIndexedEXT(0), pGlDisableIndexedEXT(0),
+	pGlColorMaskIndexedEXT(0),
+	pGlBlendFuncIndexedAMD(0), pGlBlendFunciARB(0), pGlBlendFuncSeparateIndexedAMD(0), pGlBlendFuncSeparateiARB(0),
+	pGlBlendEquationIndexedAMD(0), pGlBlendEquationiARB(0), pGlBlendEquationSeparateIndexedAMD(0), pGlBlendEquationSeparateiARB(0)
 #if defined(GLX_SGI_swap_control)
 	,pGlxSwapIntervalSGI(0)
 #endif
@@ -460,6 +467,10 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 	pGlUniformMatrix4fvARB = (PFNGLUNIFORMMATRIX4FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniformMatrix4fvARB");
 	pGlGetActiveUniformARB = (PFNGLGETACTIVEUNIFORMARBPROC) IRR_OGL_LOAD_EXTENSION("glGetActiveUniformARB");
 	pGlGetActiveUniform = (PFNGLGETACTIVEUNIFORMPROC) IRR_OGL_LOAD_EXTENSION("glGetActiveUniform");
+	pGlDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC) IRR_OGL_LOAD_EXTENSION("glDisableVertexAttribArray");
+	pGlEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC) IRR_OGL_LOAD_EXTENSION("glEnableVertexAttribArray");
+	pGlGetAttribLocation = (PFNGLGETATTRIBLOCATIONARBPROC) IRR_OGL_LOAD_EXTENSION("glGetAttribLocation");
+	pGlVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC) IRR_OGL_LOAD_EXTENSION("glVertexAttribPointer");
 
 	// get point parameter extension
 	pGlPointParameterfARB = (PFNGLPOINTPARAMETERFARBPROC) IRR_OGL_LOAD_EXTENSION("glPointParameterfARB");
@@ -473,6 +484,7 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 
 	// compressed textures
 	pGlCompressedTexImage2D = (PFNGLCOMPRESSEDTEXIMAGE2DPROC) IRR_OGL_LOAD_EXTENSION("glCompressedTexImage2D");
+	pGlCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC) IRR_OGL_LOAD_EXTENSION("glCompressedTexSubImage2D");
 
 	// ARB FrameBufferObjects
 	pGlBindFramebuffer = (PFNGLBINDFRAMEBUFFERPROC) IRR_OGL_LOAD_EXTENSION("glBindFramebuffer");
@@ -516,13 +528,6 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 	pGlGetBufferPointervARB= (PFNGLGETBUFFERPOINTERVARBPROC) IRR_OGL_LOAD_EXTENSION("glGetBufferPointervARB");
 	pGlProvokingVertexARB= (PFNGLPROVOKINGVERTEXPROC) IRR_OGL_LOAD_EXTENSION("glProvokingVertex");
 	pGlProvokingVertexEXT= (PFNGLPROVOKINGVERTEXEXTPROC) IRR_OGL_LOAD_EXTENSION("glProvokingVertexEXT");
-	pGlColorMaskIndexedEXT= (PFNGLCOLORMASKINDEXEDEXTPROC) IRR_OGL_LOAD_EXTENSION("glColorMaskIndexedEXT");
-	pGlEnableIndexedEXT= (PFNGLENABLEINDEXEDEXTPROC) IRR_OGL_LOAD_EXTENSION("glEnableIndexedEXT");
-	pGlDisableIndexedEXT= (PFNGLDISABLEINDEXEDEXTPROC) IRR_OGL_LOAD_EXTENSION("glDisableIndexedEXT");
-	pGlBlendFuncIndexedAMD= (PFNGLBLENDFUNCINDEXEDAMDPROC) IRR_OGL_LOAD_EXTENSION("glBlendFuncIndexedAMD");
-	pGlBlendFunciARB= (PFNGLBLENDFUNCIPROC) IRR_OGL_LOAD_EXTENSION("glBlendFunciARB");
-	pGlBlendEquationIndexedAMD= (PFNGLBLENDEQUATIONINDEXEDAMDPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationIndexedAMD");
-	pGlBlendEquationiARB= (PFNGLBLENDEQUATIONIPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationiARB");
 	pGlProgramParameteriARB= (PFNGLPROGRAMPARAMETERIARBPROC) IRR_OGL_LOAD_EXTENSION("glProgramParameteriARB");
 	pGlProgramParameteriEXT= (PFNGLPROGRAMPARAMETERIEXTPROC) IRR_OGL_LOAD_EXTENSION("glProgramParameteriEXT");
 
@@ -543,9 +548,26 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 	pGlGetOcclusionQueryivNV = (PFNGLGETOCCLUSIONQUERYIVNVPROC) IRR_OGL_LOAD_EXTENSION("glGetOcclusionQueryivNV");
 	pGlGetOcclusionQueryuivNV = (PFNGLGETOCCLUSIONQUERYUIVNVPROC) IRR_OGL_LOAD_EXTENSION("glGetOcclusionQueryuivNV");
 
-	// blend equation
+	// blend
+	pGlBlendFuncSeparateEXT = (PFNGLBLENDFUNCSEPARATEEXTPROC) IRR_OGL_LOAD_EXTENSION("glBlendFuncSeparateEXT");
+	pGlBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC) IRR_OGL_LOAD_EXTENSION("glBlendFuncSeparate");
 	pGlBlendEquationEXT = (PFNGLBLENDEQUATIONEXTPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationEXT");
-	pGlBlendEquation = (PFNGLBLENDEQUATIONPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquation");
+	pGlBlendEquation = (PFNGLBLENDEQUATIONPROC)IRR_OGL_LOAD_EXTENSION("glBlendEquation");
+	pGlBlendEquationSeparateEXT = (PFNGLBLENDEQUATIONSEPARATEEXTPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationSeparateEXT");
+	pGlBlendEquationSeparate = (PFNGLBLENDEQUATIONSEPARATEPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationSeparate");
+
+	// indexed
+	pGlEnableIndexedEXT = (PFNGLENABLEINDEXEDEXTPROC) IRR_OGL_LOAD_EXTENSION("glEnableIndexedEXT");
+	pGlDisableIndexedEXT = (PFNGLDISABLEINDEXEDEXTPROC) IRR_OGL_LOAD_EXTENSION("glDisableIndexedEXT");
+	pGlColorMaskIndexedEXT = (PFNGLCOLORMASKINDEXEDEXTPROC) IRR_OGL_LOAD_EXTENSION("glColorMaskIndexedEXT");
+	pGlBlendFuncIndexedAMD = (PFNGLBLENDFUNCINDEXEDAMDPROC) IRR_OGL_LOAD_EXTENSION("glBlendFuncIndexedAMD");
+	pGlBlendFunciARB = (PFNGLBLENDFUNCIPROC) IRR_OGL_LOAD_EXTENSION("glBlendFunciARB");
+	pGlBlendFuncSeparateIndexedAMD = (PFNGLBLENDFUNCSEPARATEINDEXEDAMDPROC) IRR_OGL_LOAD_EXTENSION("glBlendFuncSeparateIndexedAMD");
+	pGlBlendFuncSeparateiARB = (PFNGLBLENDFUNCSEPARATEIPROC) IRR_OGL_LOAD_EXTENSION("glBlendFuncSeparateiARB");
+	pGlBlendEquationIndexedAMD = (PFNGLBLENDEQUATIONINDEXEDAMDPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationIndexedAMD");
+	pGlBlendEquationiARB = (PFNGLBLENDEQUATIONIPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationiARB");
+	pGlBlendEquationSeparateIndexedAMD = (PFNGLBLENDEQUATIONSEPARATEINDEXEDAMDPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationSeparateIndexedAMD");
+	pGlBlendEquationSeparateiARB = (PFNGLBLENDEQUATIONSEPARATEIPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationSeparateiARB");
 
 	// get vsync extension
 	#if defined(WGL_EXT_swap_control) && !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
@@ -784,14 +806,14 @@ bool COpenGLExtensionHandler::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 		// both features supported with OpenGL 1.1
 		return Version>=110;
 	case EVDF_BLEND_OPERATIONS:
-		return (Version>=120) || FeatureAvailable[IRR_EXT_blend_minmax] ||
+		return (Version>=140) || FeatureAvailable[IRR_EXT_blend_minmax] ||
 			FeatureAvailable[IRR_EXT_blend_subtract] || FeatureAvailable[IRR_EXT_blend_logic_op];
+	case EVDF_BLEND_SEPARATE:
+		return (Version>=140) || FeatureAvailable[IRR_EXT_blend_func_separate];
 	case EVDF_TEXTURE_MATRIX:
-#ifdef _IRR_COMPILE_WITH_CG_
-	// available iff. define is present
-	case EVDF_CG:
-#endif
 		return true;
+	case EVDF_TEXTURE_COMPRESSED_DXT:
+		return FeatureAvailable[IRR_EXT_texture_compression_s3tc];
 	default:
 		return false;
 	};

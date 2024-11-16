@@ -1,5 +1,5 @@
 ==========================================================================
-The Irrlicht Engine SDK version 1.8.5
+The Irrlicht Engine SDK version 1.9
 ==========================================================================
 
   Welcome the Irrlicht Engine SDK.
@@ -75,7 +75,7 @@ The Irrlicht Engine SDK version 1.8.5
   work as well, we simply didn't test them.
 
   * gcc 4.x
-  * Visual Studio 2010(10.0)-2013(12.0)
+  * Visual Studio 2008(9.0)-2012(11.0)
   * Code::Blocks (& gcc or visual studio toolkit)
   
   If you ever want to (re)compile the engine yourself (which means you don't
@@ -129,7 +129,7 @@ The Irrlicht Engine SDK version 1.8.5
   The Irrlicht Engine License
   ===========================
 
-  Copyright (C) 2002-2015 Nikolaus Gebhardt
+  Copyright (C) 2002-2012 Nikolaus Gebhardt
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -169,14 +169,12 @@ The Irrlicht Engine SDK version 1.8.5
   by other people. Especially: (There are probably more people, sorry if I forgot one.
   See http://irrlicht.sourceforge.net/author.html for more informations)
 
-  Michael Zeilfelder (cutealien) Developer/Maintainer
-  Thomas Alten (burningwater)  Wrote the burningsvideo software rasterizer  
-  Yoran Bosman (Yoran)        Webserver administrator
-  
-  Former developers:
-  Christian Stehno (hybrid)   Founder
+  Christian Stehno (hybrid)   Contribution Coordinator/Developer
+  Michael Zeilfelder (cutealien) GUI Developer
   Patryk Nadrowski (Nadro)    Developer  
+  Yoran Bosman (Yoran)        Webserver administrator
   Gareth Davidson (bitplane)  Developer/ Forum admin
+  Thomas Alten (burningwater) Wrote the burningsvideo software rasterizer
   Luke P. Hoschke (luke)      Wrote the b3d loader, the new animation system, VBOs and other things
   Colin MacDonald (rogerborg) All hands person
   Ahmed Hilali (blindside)    The shader and advanced effects man

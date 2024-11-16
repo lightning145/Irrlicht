@@ -23,17 +23,17 @@ public:
 
 	//! Constructor
 	COpenGLNormalMapRenderer(video::COpenGLDriver* driver,
-		s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial);
+		s32& outMaterialTypeNr, E_MATERIAL_TYPE baseMaterial);
 
 	//! Destructor
 	~COpenGLNormalMapRenderer();
 
 	//! Called by the engine when the vertex and/or pixel shader constants for an
 	//! material renderer should be set.
-	virtual void OnSetConstants(IMaterialRendererServices* services, s32 userData);
+	virtual void OnSetConstants(IMaterialRendererServices* services, s32 userData) _IRR_OVERRIDE_;
 
 	//! Returns the render capability of the material.
-	virtual s32 getRenderCapability() const;
+	virtual s32 getRenderCapability() const _IRR_OVERRIDE_;
 
 protected:
 

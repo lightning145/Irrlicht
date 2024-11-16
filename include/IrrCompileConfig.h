@@ -1,18 +1,17 @@
 // Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
-
 #ifndef __IRR_COMPILE_CONFIG_H_INCLUDED__
 #define __IRR_COMPILE_CONFIG_H_INCLUDED__
 
 //! Irrlicht SDK Version
 #define IRRLICHT_VERSION_MAJOR 1
-#define IRRLICHT_VERSION_MINOR 8
-#define IRRLICHT_VERSION_REVISION 5
+#define IRRLICHT_VERSION_MINOR 9
+#define IRRLICHT_VERSION_REVISION 0
 // This flag will be defined only in SVN, the official release code will have
 // it undefined
-//#define IRRLICHT_VERSION_SVN -alpha
-#define IRRLICHT_SDK_VERSION "1.8.5"
+#define IRRLICHT_VERSION_SVN alpha
+#define IRRLICHT_SDK_VERSION "1.9.0"
 
 #include <stdio.h> // TODO: Although included elsewhere this is required at least for mingw
 
@@ -97,6 +96,13 @@
 #define _IRR_COMPILE_WITH_OSX_DEVICE_
 #endif
 
+#if defined(__SVR4) && defined(__sun)
+#define _IRR_SOLARIS_PLATFORM_
+#if defined(__sparc)
+	#define __BIG_ENDIAN__
+#endif
+#endif
+
 #if !defined(_IRR_WINDOWS_API_) && !defined(_IRR_OSX_PLATFORM_)
 #ifndef _IRR_SOLARIS_PLATFORM_
 #define _IRR_LINUX_PLATFORM_
@@ -114,7 +120,29 @@
 
 
 //! Maximum number of texture an SMaterial can have, up to 8 are supported by Irrlicht.
-#define _IRR_MATERIAL_MAX_TEXTURES_ 4
+#define _IRR_MATERIAL_MAX_TEXTURES_ 8
+
+//! Whether to support XML and XML-based formats (irrmesh, collada...)
+#define _IRR_COMPILE_WITH_XML_
+#ifdef NO_IRR_COMPILE_WITH_XML_
+#undef _IRR_COMPILE_WITH_XML_
+#endif
+
+//! Add a leak-hunter to Irrlicht which helps finding unreleased reference counted objects.
+//! NOTE: This is slow and should only be used for debugging
+//#define _IRR_COMPILE_WITH_LEAK_HUNTER_
+#ifdef NO_IRR_COMPILE_WITH_LEAK_HUNTER_
+#undef _IRR_COMPILE_WITH_LEAK_HUNTER_
+#endif
+
+//! Enable profiling information in the engine
+/** NOTE: The profiler itself always exists and can be used by applications.
+This define is about the engine creating profile data
+while it runs and enabling it will slow down the engine. */
+//#define _IRR_COMPILE_WITH_PROFILING_
+#ifdef NO_IRR_COMPILE_WITH_PROFILING_
+#undef _IRR_COMPILE_WITH_PROFILING_
+#endif
 
 //! Define _IRR_COMPILE_WITH_DIRECT3D_8_ and _IRR_COMPILE_WITH_DIRECT3D_9_ to
 //! compile the Irrlicht engine with Direct3D8 and/or DIRECT3D9.
@@ -148,6 +176,9 @@ If not defined, Windows Multimedia library is used, which offers also broad supp
 //! Only define _IRR_COMPILE_WITH_DIRECT3D_8_ if you have an appropriate DXSDK, e.g. Summer 2004
 // #define _IRR_COMPILE_WITH_DIRECT3D_8_
 #define _IRR_COMPILE_WITH_DIRECT3D_9_
+//! Only define _IRR_COMPILE_WITH_DIRECT3D_11_ if you have an appropriate DXSDK
+//! Download: http://msdn.microsoft.com/en-us/windows/desktop/hh852363.aspx
+#define _IRR_COMPILE_WITH_DIRECT3D_11_
 
 #ifdef NO_IRR_COMPILE_WITH_DIRECT3D_8_
 #undef _IRR_COMPILE_WITH_DIRECT3D_8_
@@ -155,7 +186,9 @@ If not defined, Windows Multimedia library is used, which offers also broad supp
 #ifdef NO_IRR_COMPILE_WITH_DIRECT3D_9_
 #undef _IRR_COMPILE_WITH_DIRECT3D_9_
 #endif
-
+#ifdef NO_IRR_COMPILE_WITH_DIRECT3D_11_
+#undef _IRR_COMPILE_WITH_DIRECT3D_11_
+#endif
 #endif
 
 //! Define _IRR_COMPILE_WITH_OPENGL_ to compile the Irrlicht engine with OpenGL.
@@ -238,7 +271,7 @@ for Windows based systems. You also have to set #define UNICODE for this to comp
 #undef _IRR_WCHAR_FILESYSTEM
 #endif
 
-//! Define _IRR_COMPILE_WITH_LIBJPEG_ to enable compiling the engine using libjpeg.
+//! Define _IRR_COMPILE_WITH_JPEGLIB_ to enable compiling the engine using libjpeg.
 /** This enables the engine to read jpeg images. If you comment this out,
 the engine will no longer read .jpeg images. */
 #define _IRR_COMPILE_WITH_LIBJPEG_
@@ -371,7 +404,7 @@ B3D, MS3D or X meshes */
 #ifdef NO_IRR_COMPILE_WITH_OGRE_LOADER_
 #undef _IRR_COMPILE_WITH_OGRE_LOADER_
 #endif
-#endif	// _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
+#endif // _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
 
 //! Define _IRR_COMPILE_WITH_IRR_MESH_LOADER_ if you want to load Irrlicht Engine .irrmesh files
 #define _IRR_COMPILE_WITH_IRR_MESH_LOADER_
@@ -516,14 +549,24 @@ B3D, MS3D or X meshes */
 #ifdef NO_IRR_COMPILE_WITH_PSD_LOADER_
 #undef _IRR_COMPILE_WITH_PSD_LOADER_
 #endif
-//! Define _IRR_COMPILE_WITH_DDS_LOADER_ if you want to load .dds files
+//! Define _IRR_COMPILE_WITH_DDS_LOADER_ if you want to load compressed .dds files
+// Patent problem isn't related to this loader.
+#define _IRR_COMPILE_WITH_DDS_LOADER_
+#ifdef NO_IRR_COMPILE_WITH_DDS_LOADER_
+#undef _IRR_COMPILE_WITH_DDS_LOADER_
+#endif
+//! Define _IRR_COMPILE_WITH_DDS_DECODER_LOADER_ if you want to load .dds files
+//! loader will decompress these files and will send to the memory as uncompressed files.
 // Outcommented because
 // a) it doesn't compile on 64-bit currently
 // b) anyone enabling it should be aware that S3TC compression algorithm which might be used in that loader
 // is patented in the US by S3 and they do collect license fees when it's used in applications.
 // So if you are unfortunate enough to develop applications for US market and their broken patent system be careful.
-// #define _IRR_COMPILE_WITH_DDS_LOADER_
-#ifdef NO_IRR_COMPILE_WITH_DDS_LOADER_
+// #define _IRR_COMPILE_WITH_DDS_DECODER_LOADER_
+#ifdef NO_IRR_COMPILE_WITH_DDS_DECODER_LOADER_
+#undef _IRR_COMPILE_WITH_DDS_DECODER_LOADER_
+#endif
+#ifdef _IRR_COMPILE_WITH_DDS_DECODER_LOADER_
 #undef _IRR_COMPILE_WITH_DDS_LOADER_
 #endif
 //! Define _IRR_COMPILE_WITH_TGA_LOADER_ if you want to load .tga files
@@ -673,6 +716,27 @@ precision will be lower but speed higher. currently X86 only
 	#endif
 #endif
 
+//! Enable SSE optimisation for f32 matrices and f32 vectors.
+// #define _IRR_SSE
+#ifdef NO_IRR_SSE
+#undef _IRR_SSE
+#endif
+
+//! Align macros required for SSE.
+#ifdef _IRR_SSE
+	#ifdef _IRR_WINDOWS_API_
+		#if defined(__MINGW32__) || (defined (_MSC_VER) && _MSC_VER < 1300)
+			#define _IRR_ALIGN16(x) x
+		#else
+			#define _IRR_ALIGN16(x) __declspec(align(16)) x
+		#endif
+	#else
+		#define _IRR_ALIGN16(x) x __attribute__ ((aligned(16)))
+	#endif
+#else
+	#define _IRR_ALIGN16(x) x
+#endif
+
 // Some cleanup and standard stuff
 
 #ifdef _IRR_WINDOWS_API_
@@ -782,10 +846,6 @@ precision will be lower but speed higher. currently X86 only
 	#undef _IRR_WCHAR_FILESYSTEM
 #endif
 
-#if defined(__sparc__) || defined(__sun__)
-#define __BIG_ENDIAN__
-#endif
-
 #if defined(_IRR_SOLARIS_PLATFORM_)
 	#undef _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
 #endif
@@ -794,6 +854,14 @@ precision will be lower but speed higher. currently X86 only
 #define __IRR_HAS_S64
 #ifdef NO__IRR_HAS_S64
 #undef __IRR_HAS_S64
+#endif
+
+// These depend on XML
+#ifndef _IRR_COMPILE_WITH_XML_
+	#undef _IRR_COMPILE_WITH_IRR_MESH_LOADER_
+	#undef _IRR_COMPILE_WITH_IRR_WRITER_
+	#undef _IRR_COMPILE_WITH_COLLADA_WRITER_
+	#undef _IRR_COMPILE_WITH_COLLADA_LOADER_
 #endif
 
 #if defined(__BORLANDC__)
@@ -811,7 +879,6 @@ precision will be lower but speed higher. currently X86 only
 		#define _tfindnext   __tfindnext
 		typedef long intptr_t;
 	#endif
-
 #endif
 
 #ifdef _DEBUG

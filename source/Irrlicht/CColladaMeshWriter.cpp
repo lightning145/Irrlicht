@@ -661,11 +661,20 @@ void CColladaMeshWriter::writeNodeCameras(irr::scene::ISceneNode * node)
 			Writer->writeElement(L"orthographic", false);
 			Writer->writeLineBreak();
 
-//			writeNode(L"xmag", core::stringw("1.0").c_str());	// TODO: do we need xmag, ymag?
-//			writeNode(L"ymag", core::stringw("1.0").c_str());
-			writeNode(L"aspect_ratio", core::stringw(cameraNode->getAspectRatio()).c_str());
-			writeNode(L"znear", core::stringw(cameraNode->getNearValue()).c_str());
-			writeNode(L"zfar", core::stringw(cameraNode->getFarValue()).c_str());
+			irr::core::matrix4 projMat( cameraNode->getProjectionMatrix() );
+			irr::f32 xmag = 2.f/projMat[0];
+			irr::f32 ymag = 2.f/projMat[5];
+
+			// Note that Irrlicht camera does not update near/far when setting the projection matrix,
+			// so we have to calculate that here (at least currently - maybe camera code will be updated at some time).
+			irr::f32 nearMinusFar = -1.f/projMat[10];
+			irr::f32 zNear = projMat[14]*nearMinusFar;
+			irr::f32 zFar = 1.f/projMat[10] + zNear;
+
+			writeNode(L"xmag", core::stringw(xmag).c_str());
+			writeNode(L"ymag", core::stringw(ymag).c_str());
+			writeNode(L"znear", core::stringw(zNear).c_str());
+			writeNode(L"zfar", core::stringw(zFar).c_str());
 
 			Writer->writeClosingTag(L"orthographic");
 			Writer->writeLineBreak();
@@ -740,16 +749,21 @@ void CColladaMeshWriter::writeSceneNode(irr::scene::ISceneNode * node )
 	{
 		writeMatrixElement(node->getRelativeTransformation());
 	}
+	else if ( isCamera(node) )
+	{
+		// TODO: We do not handle the case when ICameraSceneNode::getTargetAndRotationBinding() is false. Probably we would have to create a second
+		// node to do that.
+
+		// Note: We can't use rotations for the camera as Irrlicht does not regard the up-vector in rotations so far.
+		// We could maybe use projection matrices, but avoiding them might allow us to get rid of some DummyTransformationSceneNodes on
+		// import in the future. So that's why we use the lookat element instead.
+
+		ICameraSceneNode * camNode = static_cast<ICameraSceneNode*>(node);
+		writeLookAtElement(camNode->getPosition(), camNode->getTarget(), camNode->getUpVector());
+	}
 	else
 	{
 		irr::core::vector3df rot(node->getRotation());
-		if ( isCamera(node) && !static_cast<ICameraSceneNode*>(node)->getTargetAndRotationBinding() )
-		{
-			ICameraSceneNode * camNode = static_cast<ICameraSceneNode*>(node);
-			const core::vector3df toTarget = camNode->getTarget() - camNode->getAbsolutePosition();
-			rot = toTarget.getHorizontalAngle();
-		}
-
 		writeTranslateElement( node->getPosition() );
 		writeRotateElement( irr::core::vector3df(1.f, 0.f, 0.f), rot.X );
 		writeRotateElement( irr::core::vector3df(0.f, 1.f, 0.f), rot.Y );
@@ -798,8 +812,16 @@ void CColladaMeshWriter::writeSceneNode(irr::scene::ISceneNode * node )
 //! writes a mesh
 bool CColladaMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 flags)
 {
-	if (!file)
+	if (!file || !mesh)
 		return false;
+
+	for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+	{
+		u32 Size = mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexSize();
+
+		if(Size != sizeof(video::S3DVertex) && Size != sizeof(video::S3DVertex2TCoords) && Size != sizeof(video::S3DVertexTangents))
+			return false;
+	}
 
 	reset();
 
@@ -1189,6 +1211,20 @@ irr::core::stringw CColladaMeshWriter::toNCName(const irr::core::stringw& oldStr
 	return result;
 }
 
+const irr::core::stringw* CColladaMeshWriter::findGeometryNameForNode(ISceneNode* node)
+{
+	IMesh* mesh = getProperties()->getMesh(node);
+	if ( !mesh )
+		return NULL;
+
+	MeshNode * n = Meshes.find(mesh);
+	if ( !n )
+		return NULL;
+
+	const SColladaMesh& colladaMesh = n->getValue();
+	return &colladaMesh.findGeometryNameForNode(node);
+}
+
 // Restrict the characters to a set of allowed characters in xs::NCName.
 irr::core::stringw CColladaMeshWriter::pathToURI(const irr::io::path& path) const
 {
@@ -1428,13 +1464,13 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 	u32 i=0;
 	for (i=0; i<mesh->getMeshBufferCount(); ++i)
 	{
-		totalVertexCount += mesh->getMeshBuffer(i)->getVertexCount();
+		totalVertexCount += mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
 
-		if (hasSecondTextureCoordinates(mesh->getMeshBuffer(i)->getVertexType()))
-			totalTCoords2Count += mesh->getMeshBuffer(i)->getVertexCount();
+		if (mesh->getMeshBuffer(i)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
+			totalTCoords2Count += mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
 
 		if (!needsTangents)
-			needsTangents = mesh->getMeshBuffer(i)->getVertexType() == video::EVT_TANGENTS;
+			needsTangents = mesh->getMeshBuffer(i)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TANGENT) != 0;
 	}
 
 	SComponentGlobalStartPos* globalIndices = new SComponentGlobalStartPos[mesh->getMeshBufferCount()];
@@ -1455,8 +1491,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (i=0; i<mesh->getMeshBufferCount(); ++i)
 		{
 			scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-			video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-			u32 vertexCount = buffer->getVertexCount();
+			u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
 			globalIndices[i].PosStartIndex = 0;
 
@@ -1465,11 +1500,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 			globalIndices[i].PosLastIndex = globalIndices[i].PosStartIndex + vertexCount - 1;
 
-			switch(vtxType)
+			switch(buffer->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
+			case sizeof(video::S3DVertex):
 				{
-					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertices();
+					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Pos);
@@ -1477,9 +1512,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_2TCOORDS:
+			case sizeof(video::S3DVertex2TCoords):
 				{
-					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Pos);
@@ -1487,9 +1522,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_TANGENTS:
+			case sizeof(video::S3DVertexTangents):
 				{
-					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertices();
+					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Pos);
@@ -1545,8 +1580,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (i=0; i<mesh->getMeshBufferCount(); ++i)
 		{
 			scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-			video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-			u32 vertexCount = buffer->getVertexCount();
+			u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
 			globalIndices[i].TCoord0StartIndex = 0;
 
@@ -1555,11 +1589,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 			globalIndices[i].TCoord0LastIndex = globalIndices[i].TCoord0StartIndex + vertexCount - 1;
 
-			switch(vtxType)
+			switch(buffer->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
+			case sizeof(video::S3DVertex):
 				{
-					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertices();
+					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeUv(vtx[j].TCoords);
@@ -1567,9 +1601,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_2TCOORDS:
+			case sizeof(video::S3DVertex2TCoords):
 				{
-					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeUv(vtx[j].TCoords);
@@ -1577,9 +1611,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_TANGENTS:
+			case sizeof(video::S3DVertexTangents):
 				{
-					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertices();
+					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeUv(vtx[j].TCoords);
@@ -1632,8 +1666,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (i=0; i<mesh->getMeshBufferCount(); ++i)
 		{
 			scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-			video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-			u32 vertexCount = buffer->getVertexCount();
+			u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
 			globalIndices[i].NormalStartIndex = 0;
 
@@ -1642,11 +1675,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 			globalIndices[i].NormalLastIndex = globalIndices[i].NormalStartIndex + vertexCount - 1;
 
-			switch(vtxType)
+			switch(buffer->getVertexBuffer()->getVertexSize())
 			{
-			case video::EVT_STANDARD:
+			case sizeof(video::S3DVertex):
 				{
-					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertices();
+					video::S3DVertex* vtx = (video::S3DVertex*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Normal);
@@ -1654,9 +1687,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_2TCOORDS:
+			case sizeof(video::S3DVertex2TCoords):
 				{
-					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+					video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Normal);
@@ -1664,9 +1697,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 					}
 				}
 				break;
-			case video::EVT_TANGENTS:
+			case sizeof(video::S3DVertexTangents):
 				{
-					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertices();
+					video::S3DVertexTangents* vtx = (video::S3DVertexTangents*)buffer->getVertexBuffer()->getVertices();
 					for (u32 j=0; j<vertexCount; ++j)
 					{
 						writeVector(vtx[j].Normal);
@@ -1723,10 +1756,9 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 			for (i=0; i<mesh->getMeshBufferCount(); ++i)
 			{
 				scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
-				video::E_VERTEX_TYPE vtxType = buffer->getVertexType();
-				u32 vertexCount = buffer->getVertexCount();
+				u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
-				if (hasSecondTextureCoordinates(vtxType))
+				if (buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
 				{
 					globalIndices[i].TCoord1StartIndex = 0;
 
@@ -1735,11 +1767,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 
 					globalIndices[i].TCoord1LastIndex = globalIndices[i].TCoord1StartIndex + vertexCount - 1;
 
-					switch(vtxType)
+					switch(buffer->getVertexBuffer()->getVertexSize())
 					{
-					case video::EVT_2TCOORDS:
+					case sizeof(video::S3DVertex2TCoords):
 						{
-							video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertices();
+							video::S3DVertex2TCoords* vtx = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
 							for (u32 j=0; j<vertexCount; ++j)
 							{
 								writeVector(vtx[j].TCoords2);
@@ -1802,7 +1834,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 	{
 		scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
 
-		const u32 polyCount = buffer->getIndexCount() / 3;
+		const u32 polyCount = buffer->getIndexBuffer()->getIndexCount() / 3;
 		core::stringw strPolyCount(polyCount);
 		irr::core::stringw strMat(nameForMaterialSymbol(mesh, i));
 
@@ -1817,7 +1849,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		Writer->writeElement(L"input", true, L"semantic", L"NORMAL", L"source", toRef(meshNormalId).c_str(), L"offset", L"2");
 		Writer->writeLineBreak();
 
-		bool has2ndTexCoords = hasSecondTextureCoordinates(buffer->getVertexType());
+		bool has2ndTexCoords = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1) != 0;
 		if (has2ndTexCoords)
 		{
 			// TODO: when working on second uv-set - my suspicion is that this one should be called "TEXCOORD2"
@@ -1840,39 +1872,39 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		for (u32 p=0; p<polyCount; ++p)
 		{
 			strP = "";
-			strP += buffer->getIndices()[(p*3) + 0] + posIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + posIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 0] + tCoordIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + tCoordIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 0] + normalIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + normalIdx;
 			strP += " ";
 			if (has2ndTexCoords)
 			{
-				strP += buffer->getIndices()[(p*3) + 0] + tCoord2Idx;
+				strP += buffer->getIndexBuffer()->getIndex((p*3) + 0) + tCoord2Idx;
 				strP += " ";
 			}
 
-			strP += buffer->getIndices()[(p*3) + 1] + posIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + posIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 1] + tCoordIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + tCoordIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 1] + normalIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + normalIdx;
 			strP += " ";
 			if (has2ndTexCoords)
 			{
-				strP += buffer->getIndices()[(p*3) + 1] + tCoord2Idx;
+				strP += buffer->getIndexBuffer()->getIndex((p*3) + 1) + tCoord2Idx;
 				strP += " ";
 			}
 
-			strP += buffer->getIndices()[(p*3) + 2] + posIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + posIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 2] + tCoordIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + tCoordIdx;
 			strP += " ";
-			strP += buffer->getIndices()[(p*3) + 2] + normalIdx;
+			strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + normalIdx;
 			if (has2ndTexCoords)
 			{
 				strP += " ";
-				strP += buffer->getIndices()[(p*3) + 2] + tCoord2Idx;
+				strP += buffer->getIndexBuffer()->getIndex((p*3) + 2) + tCoord2Idx;
 			}
 			strP += " ";
 
@@ -2212,6 +2244,18 @@ void CColladaMeshWriter::writeTranslateElement(const irr::core::vector3df& trans
 	txt += irr::core::stringw(translate.Z);
 	Writer->writeText(txt.c_str());
 	Writer->writeClosingTag(L"translate");
+	Writer->writeLineBreak();
+}
+
+void CColladaMeshWriter::writeLookAtElement(const irr::core::vector3df& eyePos, const irr::core::vector3df& targetPos, const irr::core::vector3df& upVector)
+{
+	Writer->writeElement(L"lookat", false);
+
+	wchar_t tmpbuf[255];
+	swprintf(tmpbuf, 255, L"%f %f %f %f %f %f %f %f %f", eyePos.X, eyePos.Y, eyePos.Z, targetPos.X, targetPos.Y, targetPos.Z, upVector.X, upVector.Y, upVector.Z);
+	Writer->writeText(tmpbuf);
+
+	Writer->writeClosingTag(L"lookat");
 	Writer->writeLineBreak();
 }
 

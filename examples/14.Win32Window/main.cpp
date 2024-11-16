@@ -19,7 +19,7 @@ windows book for details.
 
 using namespace irr;
 
-#pragma comment(lib, "irrlicht.lib")
+#pragma comment(lib, "Irrlicht.lib")
 
 HWND hOKButton;
 HWND hWnd;
@@ -141,8 +141,6 @@ int main()
 		param.WindowId = reinterpret_cast<void*>(hIrrlichtWindow);
 
 	irr::IrrlichtDevice* device = irr::createDeviceEx(param);
-	if (!device)
-		return 1;
 
 	// setup a simple 3d scene
 
@@ -187,6 +185,9 @@ int main()
 	driver->getTexture("../../media/irrlicht2_ft.jpg"),
 	driver->getTexture("../../media/irrlicht2_bk.jpg"));
 
+	// This shows that we can render to multiple windows within one application
+	device->getGUIEnvironment()->addStaticText(core::stringw("Second screen render").c_str(),core::recti(0,0,200,200));
+
 	// show and execute dialog
 
 	ShowWindow(hWnd , SW_SHOW);
@@ -211,6 +212,12 @@ int main()
 		driver->beginScene(true, true, 0, videodata);
 		smgr->drawAll();
 		driver->endScene();
+		if (key=='b')
+		{
+			driver->beginScene(true, true, 0xbbbbbbbb);
+			device->getGUIEnvironment()->drawAll();
+			driver->endScene();
+		}
 	}
 
 	/*

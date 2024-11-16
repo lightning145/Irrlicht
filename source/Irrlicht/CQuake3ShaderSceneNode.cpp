@@ -30,7 +30,7 @@ CQuake3ShaderSceneNode::CQuake3ShaderSceneNode(
 			scene::ISceneNode* parent, scene::ISceneManager* mgr,s32 id,
 			io::IFileSystem *fileSystem, const scene::IMeshBuffer *original,
 			const IShader * shader)
-: scene::IMeshSceneNode(parent, mgr, id, 
+: scene::IMeshSceneNode(parent, mgr, id,
 		core::vector3df(0.f, 0.f, 0.f),
 		core::vector3df(0.f, 0.f, 0.f),
 		core::vector3df(1.f, 1.f, 1.f)),
@@ -47,18 +47,18 @@ CQuake3ShaderSceneNode::CQuake3ShaderSceneNode(
 	this->Name = Shader->name;
 
 	// take lightmap vertex type
-	MeshBuffer = new SMeshBuffer();
+	MeshBuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
 
 	Mesh = new SMesh ();
 	Mesh->addMeshBuffer ( MeshBuffer );
 	MeshBuffer->drop ();
 
 	//Original = new SMeshBufferLightMap();
-	Original = (const scene::SMeshBufferLightMap*) original;
+	Original = (const scene::CMeshBuffer<video::S3DVertex2TCoords>*) original;
 	Original->grab();
 
 	// clone meshbuffer to modifiable buffer
-	cloneBuffer(MeshBuffer, Original, 
+	cloneBuffer(MeshBuffer, Original,
 			Original->getMaterial().ColorMask != 0);
 
 	// load all Textures in all stages
@@ -87,28 +87,32 @@ CQuake3ShaderSceneNode::~CQuake3ShaderSceneNode()
 /*
 	create single copies
 */
-void CQuake3ShaderSceneNode::cloneBuffer( scene::SMeshBuffer *dest, const scene::SMeshBufferLightMap * buffer, bool translateCenter )
+void CQuake3ShaderSceneNode::cloneBuffer( scene::CMeshBuffer<video::S3DVertex> *dest, const scene::CMeshBuffer<video::S3DVertex2TCoords> * buffer, bool translateCenter )
 {
-	dest->Material = buffer->Material;
-	dest->Indices = buffer->Indices;
+	dest->getMaterial() = buffer->getMaterial();
 
-	const u32 vsize = buffer->Vertices.size();
+	dest->getIndexBuffer()->set_used(buffer->getIndexBuffer()->getIndexCount());
 
-	dest->Vertices.set_used( vsize );
+	for(u32 i = 0; i < buffer->getIndexBuffer()->getIndexCount(); ++i)
+		dest->getIndexBuffer()->setIndex(i, buffer->getIndexBuffer()->getIndex(i));
+
+	const u32 vsize = buffer->getVertexBuffer()->getVertexCount();
+
+	dest->getVertexBuffer()->set_used( vsize );
 	for ( u32 i = 0; i!= vsize; ++i )
 	{
-		const video::S3DVertex2TCoords& src = buffer->Vertices[i];
-		video::S3DVertex &dst = dest->Vertices[i];
+		video::S3DVertex2TCoords* src = (video::S3DVertex2TCoords*)buffer->getVertexBuffer()->getVertices();
+		video::S3DVertex* dst = (video::S3DVertex*)dest->getVertexBuffer()->getVertices();
 
-		dst.Pos = src.Pos;
-		dst.Normal = src.Normal;
-		dst.Color = 0xFFFFFFFF;
-		dst.TCoords = src.TCoords;
+		dst[i].Pos = src[i].Pos;
+		dst[i].Normal = src[i].Normal;
+		dst[i].Color = 0xFFFFFFFF;
+		dst[i].TCoords = src[i].TCoords;
 
 		if ( i == 0 )
-			dest->BoundingBox.reset ( src.Pos );
+			dest->getBoundingBox().reset ( src[i].Pos );
 		else
-			dest->BoundingBox.addInternalPoint ( src.Pos );
+			dest->getBoundingBox().addInternalPoint(src[i].Pos);
 	}
 
 	// move the (temp) Mesh to a ScenePosititon
@@ -116,7 +120,7 @@ void CQuake3ShaderSceneNode::cloneBuffer( scene::SMeshBuffer *dest, const scene:
 
 	if ( translateCenter )
 	{
-		MeshOffset = dest->BoundingBox.getCenter();
+		MeshOffset = dest->getBoundingBox().getCenter();
 		setPosition( MeshOffset );
 
 		core::matrix4 m;
@@ -125,7 +129,7 @@ void CQuake3ShaderSceneNode::cloneBuffer( scene::SMeshBuffer *dest, const scene:
 	}
 
 	// No Texture!. Use Shader-Pointer for sorting
-	dest->Material.setTexture(0, (video::ITexture*) Shader);
+	dest->getMaterial().setTexture(0, (video::ITexture*) Shader);
 }
 
 
@@ -249,7 +253,7 @@ E_SCENE_NODE_RENDER_PASS CQuake3ShaderSceneNode::getRenderStage() const
 		ret = ESNRP_TRANSPARENT_EFFECT;
 	}
 	else
-*/	
+*/
 	if ( group->isDefined( "sort", "opaque" ) )
 	{
 		ret = ESNRP_SOLID;
@@ -262,7 +266,6 @@ E_SCENE_NODE_RENDER_PASS CQuake3ShaderSceneNode::getRenderStage() const
 	else
 	if (	strstr ( Shader->name.c_str(), "flame" ) ||
 			group->isDefined( "surfaceparm", "water" ) ||
-			group->isDefined( "sort", "underwater" ) ||
 			group->isDefined( "sort", "underwater" )
 		)
 	{
@@ -411,8 +414,8 @@ void CQuake3ShaderSceneNode::render()
 		video::SMaterial deb_m;
 
 		IAnimatedMesh * arrow = SceneManager->addArrowMesh (
-				"__debugnormalq3", 
-				0xFFECEC00,0xFF999900, 
+				"__debugnormalq3",
+				0xFFECEC00,0xFF999900,
 				4, 8,
 				8.f, 6.f,
 				0.5f,1.f
@@ -429,12 +432,12 @@ void CQuake3ShaderSceneNode::render()
 
 		// draw normals
 		const scene::IMeshBuffer* mb = MeshBuffer;
-		const u32 vSize = video::getVertexPitchFromType(mb->getVertexType());
-		const video::S3DVertex* v = ( const video::S3DVertex*)mb->getVertices();
+		const u32 vSize = mb->getVertexBuffer()->getVertexSize();
+		const video::S3DVertex* v = ( const video::S3DVertex*)mb->getVertexBuffer()->getVertices();
 
 		//f32 colCycle = 270.f / (f32) core::s32_max ( mb->getVertexCount() - 1, 1 );
 
-		for ( u32 i=0; i != mb->getVertexCount(); ++i )
+		for ( u32 i=0; i != mb->getVertexBuffer()->getVertexCount(); ++i )
 		{
 			// Align to v->normal
 			m2.buildRotateFromTo ( core::vector3df ( 0.f, 1.f, 0 ), v->Normal );
@@ -534,7 +537,7 @@ IShadowVolumeSceneNode* CQuake3ShaderSceneNode::addShadowVolumeSceneNode(
 3.3.1 deformVertexes wave <div> <func> <base> <amplitude> <phase> <freq>
 	Designed for water surfaces, modifying the values differently at each point.
 	It accepts the standard wave functions of the type sin, triangle, square, sawtooth
-	or inversesawtooth. The "div" parameter is used to control the wave "spread" 
+	or inversesawtooth. The "div" parameter is used to control the wave "spread"
 	- a value equal to the tessSize of the surface is a good default value
 	(tessSize is subdivision size, in game units, used for the shader when seen in the game world) .
 */
@@ -544,43 +547,43 @@ void CQuake3ShaderSceneNode::deformvertexes_wave( f32 dt, SModifierFunction &fun
 
 	const f32 phase = function.phase;
 
-	const u32 vsize = Original->Vertices.size();
+	const u32 vsize = Original->getVertexBuffer()->getVertexCount();
 	for ( u32 i = 0; i != vsize; ++i )
 	{
-		const video::S3DVertex2TCoords &src = Original->Vertices[i];
-		video::S3DVertex &dst = MeshBuffer->Vertices[i];
+		video::S3DVertex2TCoords* src = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+		video::S3DVertex* dst = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
 		if ( 0 == function.count )
-			dst.Pos = src.Pos - MeshOffset;
+			dst[i].Pos = src[i].Pos - MeshOffset;
 
-		const f32 wavephase = (dst.Pos.X + dst.Pos.Y + dst.Pos.Z) * function.wave;
+		const f32 wavephase = (dst[i].Pos.X + dst[i].Pos.Y + dst[i].Pos.Z) * function.wave;
 		function.phase = phase + wavephase;
 
 		const f32 f = function.evaluate( dt );
 
-		dst.Pos.X += f * src.Normal.X;
-		dst.Pos.Y += f * src.Normal.Y;
-		dst.Pos.Z += f * src.Normal.Z;
+		dst[i].Pos.X += f * src[i].Normal.X;
+		dst[i].Pos.Y += f * src[i].Normal.Y;
+		dst[i].Pos.Z += f * src[i].Normal.Z;
 
 		if ( i == 0 )
-			MeshBuffer->BoundingBox.reset ( dst.Pos );
+			MeshBuffer->getBoundingBox().reset(dst[i].Pos);
 		else
-			MeshBuffer->BoundingBox.addInternalPoint ( dst.Pos );
+			MeshBuffer->getBoundingBox().addInternalPoint(dst[i].Pos);
 	}
 	function.count = 1;
 }
 
 /*!
 	deformVertexes move x y z func base amplitude phase freq
-	The move parameter is used to make a brush, curve patch or model 
+	The move parameter is used to make a brush, curve patch or model
 	appear to move together as a unit. The x y z values are the distance
-	and direction in game units the object appears to move relative to 
+	and direction in game units the object appears to move relative to
 	it's point of origin in the map. The func base amplitude phase freq values are
 	the same as found in other waveform manipulations.
 
 	The product of the function modifies the values x, y, and z.
-	Therefore, if you have an amplitude of 5 and an x value of 2, 
-	the object will travel 10 units from its point of origin along the x axis. 
+	Therefore, if you have an amplitude of 5 and an x value of 2,
+	the object will travel 10 units from its point of origin along the x axis.
 	This results in a total of 20 units of motion along the x axis, since the
 	amplitude is the variation both above and below the base.
 
@@ -588,7 +591,7 @@ void CQuake3ShaderSceneNode::deformvertexes_wave( f32 dt, SModifierFunction &fun
 	change position, it only appears to.
 
 	Design Notes:
-	If an object is made up of surfaces with different shaders, all must have 
+	If an object is made up of surfaces with different shaders, all must have
 	matching deformVertexes move values or the object will appear to tear itself apart.
 */
 void CQuake3ShaderSceneNode::deformvertexes_move( f32 dt, SModifierFunction &function )
@@ -596,23 +599,23 @@ void CQuake3ShaderSceneNode::deformvertexes_move( f32 dt, SModifierFunction &fun
 	function.wave = core::reciprocal( function.wave );
 	const f32 f = function.evaluate( dt );
 
-	const u32 vsize = Original->Vertices.size();
+	const u32 vsize = Original->getVertexBuffer()->getVertexCount();
 	for ( u32 i = 0; i != vsize; ++i )
 	{
-		const video::S3DVertex2TCoords &src = Original->Vertices[i];
-		video::S3DVertex &dst = MeshBuffer->Vertices[i];
+		video::S3DVertex2TCoords* src = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+		video::S3DVertex* dst = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
 		if ( 0 == function.count )
-			dst.Pos = src.Pos - MeshOffset;
+			dst[i].Pos = src[i].Pos - MeshOffset;
 
-		dst.Pos.X += f * function.x;
-		dst.Pos.Y += f * function.y;
-		dst.Pos.Z += f * function.z;
+		dst[i].Pos.X += f * function.x;
+		dst[i].Pos.Y += f * function.y;
+		dst[i].Pos.Z += f * function.z;
 
 		if ( i == 0 )
-			MeshBuffer->BoundingBox.reset ( dst.Pos );
+			MeshBuffer->getBoundingBox().reset(dst[i].Pos);
 		else
-			MeshBuffer->BoundingBox.addInternalPoint ( dst.Pos );
+			MeshBuffer->getBoundingBox().addInternalPoint(dst[i].Pos);
 	}
 	function.count = 1;
 
@@ -626,31 +629,31 @@ void CQuake3ShaderSceneNode::deformvertexes_move( f32 dt, SModifierFunction &fun
 		be no visible effect.
 
 		Design Notes: Putting values of 0.1 t o 0.5 in Amplitude and 1.0 to 4.0 in the
-		Frequency can produce some satisfying results. Some things that have been 
+		Frequency can produce some satisfying results. Some things that have been
 		done with it: A small fluttering bat, falling leaves, rain, flags.
 */
 void CQuake3ShaderSceneNode::deformvertexes_normal( f32 dt, SModifierFunction &function )
 {
 	function.func = SINUS;
-	const u32 vsize = Original->Vertices.size();
+	const u32 vsize = Original->getVertexBuffer()->getVertexCount();
 	for ( u32 i = 0; i != vsize; ++i )
 	{
-		const video::S3DVertex2TCoords &src = Original->Vertices[i];
-		video::S3DVertex &dst = MeshBuffer->Vertices[i];
+		video::S3DVertex2TCoords* src = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+		video::S3DVertex* dst = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
-		function.base = atan2f ( src.Pos.X, src.Pos.Y );
-		function.phase = src.Pos.X + src.Pos.Z;
+		function.base = atan2f ( src[i].Pos.X, src[i].Pos.Y );
+		function.phase = src[i].Pos.X + src[i].Pos.Z;
 
 		const f32 lat = function.evaluate( dt );
 
-		function.base = src.Normal.Y;
-		function.phase = src.Normal.Z + src.Normal.X;
+		function.base = src[i].Normal.Y;
+		function.phase = src[i].Normal.Z + src[i].Normal.X;
 
 		const f32 lng = function.evaluate( dt );
 
-		dst.Normal.X = cosf ( lat ) * sinf ( lng );
-		dst.Normal.Y = sinf ( lat ) * sinf ( lng );
-		dst.Normal.Z = cosf ( lng );
+		dst[i].Normal.X = cosf ( lat ) * sinf ( lng );
+		dst[i].Normal.Y = sinf ( lat ) * sinf ( lng );
+		dst[i].Normal.Z = cosf ( lng );
 
 	}
 }
@@ -663,31 +666,31 @@ void CQuake3ShaderSceneNode::deformvertexes_normal( f32 dt, SModifierFunction &f
 
 	Specific parameter definitions for deform keywords:
 		<div>	This is roughly defined as the size of the waves that occur.
-				It is measured in game units. Smaller values create a greater 
-				density of smaller wave forms occurring in a given area. 
+				It is measured in game units. Smaller values create a greater
+				density of smaller wave forms occurring in a given area.
 				Larger values create a lesser density of waves, or otherwise put,
-				the appearance of larger waves. To look correct this value should 
+				the appearance of larger waves. To look correct this value should
 				closely correspond to the value (in pixels) set for tessSize (tessellation size)
-				of the texture. A value of 100.0 is a good default value 
+				of the texture. A value of 100.0 is a good default value
 				(which means your tessSize should be close to that for things to look "wavelike").
 
-		<func>	This is the type of wave form being created. Sin stands for sine wave, 
+		<func>	This is the type of wave form being created. Sin stands for sine wave,
 				a regular smoothly flowing wave. Triangle is a wave with a sharp ascent
 				and a sharp decay. It will make a choppy looking wave forms.
-				A square wave is simply on or off for the period of the 
+				A square wave is simply on or off for the period of the
 				frequency with no in between. The sawtooth wave has the ascent of a
-				triangle wave, but has the decay cut off sharply like a square wave. 
+				triangle wave, but has the decay cut off sharply like a square wave.
 				An inversesawtooth wave reverses this.
 
-		<base>	This is the distance, in game units that the apparent surface of the 
-				texture is displaced from the actual surface of the brush as placed 
-				in the editor. A positive value appears above the brush surface. 
-				A negative value appears below the brush surface. 
-				An example of this is the Quad effect, which essentially is a 
-				shell with a positive base value to stand it away from the model 
+		<base>	This is the distance, in game units that the apparent surface of the
+				texture is displaced from the actual surface of the brush as placed
+				in the editor. A positive value appears above the brush surface.
+				A negative value appears below the brush surface.
+				An example of this is the Quad effect, which essentially is a
+				shell with a positive base value to stand it away from the model
 				surface and a 0 (zero) value for amplitude.
 
-		<amplitude> The distance that the deformation moves away from the base value. 
+		<amplitude> The distance that the deformation moves away from the base value.
 					See Wave Forms in the introduction for a description of amplitude.
 
 		<phase> See Wave Forms in the introduction for a description of phase)
@@ -696,7 +699,7 @@ void CQuake3ShaderSceneNode::deformvertexes_normal( f32 dt, SModifierFunction &f
 
 		Design Note: The div and amplitude parameters, when used in conjunction with
 		liquid volumes like water should take into consideration how much the water
-		will be moving. A large ocean area would have have massive swells (big div values) 
+		will be moving. A large ocean area would have have massive swells (big div values)
 		that rose and fell dramatically (big amplitude values). While a small, quiet pool
 		may move very little.
 */
@@ -708,41 +711,41 @@ void CQuake3ShaderSceneNode::deformvertexes_bulge( f32 dt, SModifierFunction &fu
 	dt *= function.bulgespeed * 0.1f;
 	const f32 phase = function.phase;
 
-	const u32 vsize = Original->Vertices.size();
+	const u32 vsize = Original->getVertexBuffer()->getVertexCount();
 	for ( u32 i = 0; i != vsize; ++i )
 	{
-		const video::S3DVertex2TCoords &src = Original->Vertices[i];
-		video::S3DVertex &dst = MeshBuffer->Vertices[i];
+		video::S3DVertex2TCoords* src = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+		video::S3DVertex* dst = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
-		const f32 wavephase = (Original->Vertices[i].TCoords.X ) * function.wave;
+		const f32 wavephase = (src[i].TCoords.X ) * function.wave;
 		function.phase = phase + wavephase;
 
 		const f32 f = function.evaluate( dt );
 
 		if ( 0 == function.count )
-			dst.Pos = src.Pos - MeshOffset;
+			dst[i].Pos = src[i].Pos - MeshOffset;
 
-		dst.Pos.X += f * src.Normal.X;
-		dst.Pos.Y += f * src.Normal.Y;
-		dst.Pos.Z += f * src.Normal.Z;
+		dst[i].Pos.X += f * src[i].Normal.X;
+		dst[i].Pos.Y += f * src[i].Normal.Y;
+		dst[i].Pos.Z += f * src[i].Normal.Z;
 
 		if ( i == 0 )
-			MeshBuffer->BoundingBox.reset ( dst.Pos );
+			MeshBuffer->getBoundingBox().reset(dst[i].Pos);
 		else
-			MeshBuffer->BoundingBox.addInternalPoint ( dst.Pos );
+			MeshBuffer->getBoundingBox().addInternalPoint(dst[i].Pos);
 	}
 
 	function.count = 1;
 }
 
-						
+
 /*!
 	deformVertexes autosprite
 
-	This function can be used to make any given triangle quad 
+	This function can be used to make any given triangle quad
 	(pair of triangles that form a square rectangle) automatically behave
-	like a sprite without having to make it a separate entity. This means 
-	that the "sprite" on which the texture is placed will rotate to always 
+	like a sprite without having to make it a separate entity. This means
+	that the "sprite" on which the texture is placed will rotate to always
 	appear at right angles to the player's view as a sprite would. Any four-sided
 	brush side, flat patch, or pair of triangles in a model can have the autosprite
 	effect on it. The brush face containing a texture with this shader keyword must
@@ -750,14 +753,14 @@ void CQuake3ShaderSceneNode::deformvertexes_bulge( f32 dt, SModifierFunction &fu
 */
 void CQuake3ShaderSceneNode::deformvertexes_autosprite( f32 dt, SModifierFunction &function )
 {
-	u32 vsize = Original->Vertices.size();
+	u32 vsize = Original->getVertexBuffer()->getVertexCount();
 	u32 g;
 	u32 i;
 
 	const core::vector3df& camPos = SceneManager->getActiveCamera()->getPosition();
 
-	video::S3DVertex * dv = MeshBuffer->Vertices.pointer();
-	const video::S3DVertex2TCoords * vin = Original->Vertices.const_pointer();
+	video::S3DVertex2TCoords* vin = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+	video::S3DVertex* dv = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
 	core::matrix4 lookat ( core::matrix4::EM4CONST_NOTHING );
 	core::quaternion q;
@@ -784,7 +787,7 @@ void CQuake3ShaderSceneNode::deformvertexes_autosprite( f32 dt, SModifierFunctio
 /*!
 	deformVertexes autosprite2
 	Is a slightly modified "sprite" that only rotates around the middle of its longest axis.
-	This allows you to make a pillar of fire that you can walk around, or an energy beam 
+	This allows you to make a pillar of fire that you can walk around, or an energy beam
 	stretched across the room.
 */
 
@@ -800,14 +803,14 @@ struct sortaxis
 */
 void CQuake3ShaderSceneNode::deformvertexes_autosprite2( f32 dt, SModifierFunction &function )
 {
-	u32 vsize = Original->Vertices.size();
+	u32 vsize = Original->getVertexBuffer()->getVertexCount();
 	u32 g;
 	u32 i;
 
 	const core::vector3df camPos = SceneManager->getActiveCamera()->getAbsolutePosition();
 
-	video::S3DVertex * dv = MeshBuffer->Vertices.pointer();
-	const video::S3DVertex2TCoords * vin = Original->Vertices.const_pointer();
+	video::S3DVertex2TCoords* vin = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+	video::S3DVertex* dv = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
 	core::matrix4 lookat ( core::matrix4::EM4CONST_NOTHING );
 
@@ -843,28 +846,31 @@ void CQuake3ShaderSceneNode::deformvertexes_autosprite2( f32 dt, SModifierFuncti
 void CQuake3ShaderSceneNode::vertextransform_rgbgen( f32 dt, SModifierFunction &function )
 {
 	u32 i;
-	const u32 vsize = Original->Vertices.size();
+	const u32 vsize = Original->getVertexBuffer()->getVertexCount();
+
+	video::S3DVertex2TCoords* OVertices = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+	video::S3DVertex* Vertices = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
 	switch ( function.rgbgen )
 	{
 		case IDENTITY:
 			//rgbgen identity
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color.set(0xFFFFFFFF);
+				Vertices[i].Color.set(0xFFFFFFFF);
 			break;
 
 		case IDENTITYLIGHTING:
 			// rgbgen identitylighting TODO: overbright
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color.set(0xFF7F7F7F);
+				Vertices[i].Color.set(0xFF7F7F7F);
 			break;
 
-		case EXACTVERTEX:		
+		case EXACTVERTEX:
 			// alphagen exactvertex TODO lighting
 		case VERTEX:
 			// rgbgen vertex
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color=Original->Vertices[i].Color;
+				Vertices[i].Color=OVertices[i].Color;
 			break;
 		case WAVE:
 		{
@@ -874,7 +880,7 @@ void CQuake3ShaderSceneNode::vertextransform_rgbgen( f32 dt, SModifierFunction &
 			value = 0xFF000000 | value << 16 | value << 8 | value;
 
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color.set(value);
+				Vertices[i].Color.set(value);
 		} break;
 		case CONSTANT:
 		{
@@ -882,7 +888,7 @@ void CQuake3ShaderSceneNode::vertextransform_rgbgen( f32 dt, SModifierFunction &
 			video::SColorf cf( function.x, function.y, function.z );
 			video::SColor col = cf.toSColor();
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color=col;
+				Vertices[i].Color=col;
 		} break;
 		default:
 			break;
@@ -895,29 +901,32 @@ void CQuake3ShaderSceneNode::vertextransform_rgbgen( f32 dt, SModifierFunction &
 void CQuake3ShaderSceneNode::vertextransform_alphagen( f32 dt, SModifierFunction &function )
 {
 	u32 i;
-	const u32 vsize = Original->Vertices.size();
+	const u32 vsize = Original->getVertexBuffer()->getVertexCount();
+
+	video::S3DVertex2TCoords* OVertices = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+	video::S3DVertex* Vertices = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
 	switch ( function.alphagen )
 	{
 		case IDENTITY:
 			//alphagen identity
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color.setAlpha ( 0xFF );
+				Vertices[i].Color.setAlpha ( 0xFF );
 			break;
 
-		case EXACTVERTEX:	
+		case EXACTVERTEX:
 			// alphagen exactvertex TODO lighting
 		case VERTEX:
 			// alphagen vertex
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color.setAlpha ( Original->Vertices[i].Color.getAlpha() );
+				Vertices[i].Color.setAlpha ( OVertices[i].Color.getAlpha() );
 			break;
 		case CONSTANT:
 		{
 			// alphagen const
 			u32 a = (u32) ( function.x * 255.f );
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color.setAlpha ( a );
+				Vertices[i].Color.setAlpha ( a );
 		} break;
 
 		case LIGHTINGSPECULAR:
@@ -930,8 +939,8 @@ void CQuake3ShaderSceneNode::vertextransform_alphagen( f32 dt, SModifierFunction
 
 			for ( i = 0; i != vsize; ++i )
 			{
-				const core::vector3df &n = Original->Vertices[i].Normal;
-				MeshBuffer->Vertices[i].Color.setAlpha ((u32)( 128.f *(1.f+(n.X*m[0]+n.Y*m[1]+n.Z*m[2]))));
+				const core::vector3df &n = OVertices[i].Normal;
+				Vertices[i].Color.setAlpha ((u32)( 128.f *(1.f+(n.X*m[0]+n.Y*m[1]+n.Z*m[2]))));
 			}
 
 		} break;
@@ -944,7 +953,7 @@ void CQuake3ShaderSceneNode::vertextransform_alphagen( f32 dt, SModifierFunction
 			s32 value = core::clamp( core::floor32(f), 0, 255 );
 
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].Color.setAlpha ( value );
+				Vertices[i].Color.setAlpha ( value );
 		} break;
 		default:
 			break;
@@ -959,7 +968,10 @@ void CQuake3ShaderSceneNode::vertextransform_alphagen( f32 dt, SModifierFunction
 void CQuake3ShaderSceneNode::vertextransform_tcgen( f32 dt, SModifierFunction &function )
 {
 	u32 i;
-	const u32 vsize = Original->Vertices.size();
+	const u32 vsize = Original->getVertexBuffer()->getVertexCount();
+
+	video::S3DVertex2TCoords* OVertices = (video::S3DVertex2TCoords*)Original->getVertexBuffer()->getVertices();
+	video::S3DVertex* Vertices = (video::S3DVertex*)MeshBuffer->getVertexBuffer()->getVertices();
 
 	switch ( function.tcgen )
 	{
@@ -972,8 +984,8 @@ void CQuake3ShaderSceneNode::vertextransform_tcgen( f32 dt, SModifierFunction &f
 
 			for ( i = 0; i != vsize; ++i )
 			{
-				const video::S3DVertex2TCoords &src = Original->Vertices[i];
-				video::S3DVertex &dst = MeshBuffer->Vertices[i];
+				const video::S3DVertex2TCoords &src = OVertices[i];
+				video::S3DVertex &dst = Vertices[i];
 
 				const f32 wavephase = (src.Pos.X + src.Pos.Y + src.Pos.Z) * function.wave;
 				function.phase = phase + wavephase;
@@ -989,12 +1001,12 @@ void CQuake3ShaderSceneNode::vertextransform_tcgen( f32 dt, SModifierFunction &f
 		case TEXTURE:
 			// tcgen texture
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].TCoords = Original->Vertices[i].TCoords;
+				Vertices[i].TCoords = OVertices[i].TCoords;
 			break;
 		case LIGHTMAP:
 			// tcgen lightmap
 			for ( i = 0; i != vsize; ++i )
-				MeshBuffer->Vertices[i].TCoords = Original->Vertices[i].TCoords2;
+				Vertices[i].TCoords = OVertices[i].TCoords2;
 			break;
 		case ENVIRONMENT:
 		{
@@ -1009,13 +1021,13 @@ void CQuake3ShaderSceneNode::vertextransform_tcgen( f32 dt, SModifierFunction &f
 			{
 				//const core::vector3df &n = Original->Vertices[i].Normal;
 
-				n = frustum->cameraPosition - Original->Vertices[i].Pos;
+				n = frustum->cameraPosition - OVertices[i].Pos;
 				n.normalize();
-				n += Original->Vertices[i].Normal;
+				n += OVertices[i].Normal;
 				n.normalize();
 
-				MeshBuffer->Vertices[i].TCoords.X = 0.5f*(1.f+(n.X*m[0]+n.Y*m[1]+n.Z*m[2])); 
-				MeshBuffer->Vertices[i].TCoords.Y = 0.5f*(1.f+(n.X*m[4]+n.Y*m[5]+n.Z*m[6])); 
+				Vertices[i].TCoords.X = 0.5f*(1.f+(n.X*m[0]+n.Y*m[1]+n.Z*m[2]));
+				Vertices[i].TCoords.Y = 0.5f*(1.f+(n.X*m[4]+n.Y*m[5]+n.Z*m[6]));
 			}
 
 		} break;
@@ -1101,9 +1113,9 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 	{
 		const SVariable &v = group->Variable[g];
 
-		// get the modifier 
-		static const c8 * modifierList[] =
-		{ 
+		// get the modifier
+		static const c8 * const modifierList[] =
+		{
 			"tcmod","deformvertexes","rgbgen","tcgen","map","alphagen"
 		};
 
@@ -1124,8 +1136,8 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 		}
 
 		// get the modifier function
-		static const c8 * funclist[] =
-		{ 
+		static const c8 * const funclist[] =
+		{
 			"scroll","scale","rotate","stretch","turb",
 			"wave","identity","vertex",
 			"texture","lightmap","environment","$lightmap",
@@ -1133,7 +1145,7 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 			"exactvertex","const","lightingspecular","move","normal",
 			"identitylighting"
 		};
-		static const c8 * groupToken[] = { "(", ")" };
+		static const c8 * const groupToken[] = { "(", ")" };
 
 		pos = 0;
 		function.masterfunc1 = (eQ3ModifierFunction) isEqual( v.content, pos, funclist, 22 );
@@ -1156,7 +1168,7 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 				break;
 			case ROTATE:
 				// tcmod rotate <degress per second>
-				m2.setTextureRotationCenter(	getAsFloat( v.content, pos ) * 
+				m2.setTextureRotationCenter(	getAsFloat( v.content, pos ) *
 												core::DEGTORAD *
 												TimeAbs
 											);
@@ -1228,8 +1240,8 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 					case TURBULENCE:
 						//tcMod turb <base> <amplitude> <phase> <freq>
 						//function.tcgen = TURBULENCE;
-						m2.setTextureRotationCenter(	function.frequency * 
-														core::DEGTORAD * 
+						m2.setTextureRotationCenter(	function.frequency *
+														core::DEGTORAD *
 														TimeAbs
 													);
 						break;
@@ -1283,7 +1295,7 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 					default:
 						break;
 				}
-				
+
 			} break;
 			case TEXTURE:
 			case LIGHTMAP:
@@ -1361,12 +1373,12 @@ u32 CQuake3ShaderSceneNode::getMaterialCount() const
 
 video::SMaterial& CQuake3ShaderSceneNode::getMaterial(u32 i)
 {
-	video::SMaterial& m = MeshBuffer->Material;
+	video::SMaterial& m = MeshBuffer->getMaterial();
 	m.setTexture(0, 0);
 	if ( Q3Texture [ i ].TextureIndex )
 		m.setTexture(0, Q3Texture [ i ].Texture [ Q3Texture [ i ].TextureIndex ]);
 	return m;
-}	
+}
 
 
 } // end namespace scene

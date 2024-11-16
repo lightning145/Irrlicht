@@ -129,8 +129,8 @@ void CGUIContextMenu::setSubMenu(u32 index, CGUIContextMenu* menu)
 	if (index >= Items.size())
 		return;
 
-	if (menu)
-		menu->grab();
+    if (menu)
+        menu->grab();
 	if (Items[index].SubMenu)
 		Items[index].SubMenu->drop();
 
@@ -289,25 +289,22 @@ bool CGUIContextMenu::OnEvent(const SEvent& event)
 				{
 					// set event parent of submenus
 					IGUIElement * p =  EventParent ? EventParent : Parent;
-					if ( p )	// can be 0 when element got removed already
-					{
-						setEventParent(p);
+					setEventParent(p);
 
-						SEvent event;
-						event.EventType = EET_GUI_EVENT;
-						event.GUIEvent.Caller = this;
-						event.GUIEvent.Element = 0;
-						event.GUIEvent.EventType = EGET_ELEMENT_CLOSED;
-						if ( !p->OnEvent(event) )
+					SEvent event;
+					event.EventType = EET_GUI_EVENT;
+					event.GUIEvent.Caller = this;
+					event.GUIEvent.Element = 0;
+					event.GUIEvent.EventType = EGET_ELEMENT_CLOSED;
+					if ( !p->OnEvent(event) )
+					{
+						if ( CloseHandling & ECMC_HIDE )
 						{
-							if ( CloseHandling & ECMC_HIDE )
-							{
-								setVisible(false);
-							}
-							if ( CloseHandling & ECMC_REMOVE )
-							{
-								remove();
-							}
+							setVisible(false);
+						}
+						if ( CloseHandling & ECMC_REMOVE )
+						{
+							remove();
 						}
 					}
 
