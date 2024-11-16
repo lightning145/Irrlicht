@@ -7,11 +7,8 @@
 
 #include "IGUISkin.h"
 #include "IGUIEnvironment.h"
-#include "IVideoDriver.h"
 #include "IGUIFont.h"
 #include "IGUIWindow.h"
-
-#include "os.h"
 
 namespace irr
 {
@@ -42,8 +39,12 @@ void CGUIMenu::draw()
 		return;
 
 	IGUISkin* skin = Environment->getSkin();
-	IGUIFont* font = skin->getFont(EGDF_MENU);
+	if ( !skin )
+		return;
 
+	updateOpenSubMenus(0);
+
+	IGUIFont* font = skin->getFont(EGDF_MENU);
 	if (font != LastFont)
 	{
 		if (LastFont)
@@ -88,7 +89,7 @@ void CGUIMenu::draw()
 				c = EGDC_GRAY_TEXT;
 
 			if (font)
-				font->draw(Items[i].Text.c_str(), rect,
+				font->draw(Items[i].Text, rect,
 					skin->getColor(c), true, true, &AbsoluteClippingRect);
 		}
 	}
@@ -130,11 +131,6 @@ bool CGUIMenu::OnEvent(const SEvent& event)
 			{
 			case EMIE_LMOUSE_PRESSED_DOWN:
 			{
-				if (!Environment->hasFocus(this))
-				{
-					Environment->setFocus(this);
-				}
-
 				if (Parent)
 					Parent->bringToFront(this);
 
@@ -144,7 +140,7 @@ bool CGUIMenu::OnEvent(const SEvent& event)
 				{
 					shouldCloseSubMenu = false;
 				}
-				highlight(core::position2d<s32>(event.MouseInput.X,	event.MouseInput.Y), true);
+				highlight(core::position2d<s32>(event.MouseInput.X,	event.MouseInput.Y));
 				if ( shouldCloseSubMenu )
 				{
                     Environment->removeFocus(this);
@@ -168,7 +164,7 @@ bool CGUIMenu::OnEvent(const SEvent& event)
 				if (Environment->hasFocus(this) && HighLighted >= 0)
 				{
 				    s32 oldHighLighted = HighLighted;
-					highlight(core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y), true);
+					highlight(core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
 					if ( HighLighted < 0 )
                         HighLighted = oldHighLighted;   // keep last hightlight active when moving outside the area
 				}
@@ -204,6 +200,8 @@ void CGUIMenu::recalculateSize()
 
 
 	IGUISkin* skin = Environment->getSkin();
+	if ( !skin )
+		return;
 	IGUIFont* font = skin->getFont(EGDF_MENU);
 
 	if (!font)

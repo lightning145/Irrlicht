@@ -1,6 +1,8 @@
 // This file is part of the "Irrlicht Engine".
-// written by Reinhard Ostermeier, reinhard@nospam.r-ostermeier.de
-// expanded by burningwater
+// Written by Reinhard Ostermeier, reinhard@nospam.r-ostermeier.de
+// Expanded by burningwater
+// Bugfixes and some features by Michael Zeilfelder
+// Bugfixes by Andreas Reichl
 
 #include "CGUITreeView.h"
 
@@ -11,7 +13,6 @@
 #include "IVideoDriver.h"
 #include "IGUIFont.h"
 #include "CGUIScrollBar.h"
-#include "os.h"
 
 namespace irr
 {
@@ -23,17 +24,13 @@ CGUITreeViewNode::CGUITreeViewNode( CGUITreeView* owner, CGUITreeViewNode* paren
 	Data(0), Data2(0), Expanded(false)
 {
 #ifdef _DEBUG
-	setDebugName( "CGUITreeView" );
+	setDebugName( "CGUITreeViewNode" );
 #endif
 }
 
 CGUITreeViewNode::~CGUITreeViewNode()
 {
-	if( Owner && this == Owner->getSelected() )
-	{
-		setSelected( false );
-	}
-
+	setSelected( false );
 	clearChildren();
 
 	if( Data2 )
@@ -64,10 +61,9 @@ void CGUITreeViewNode::setIcon( const wchar_t* icon )
 
 void CGUITreeViewNode::clearChildren()
 {
-	core::list<CGUITreeViewNode*>::Iterator	it;
-
-	for( it = Children.begin(); it != Children.end(); it++ )
+	for(core::list<CGUITreeViewNode*>::Iterator it = Children.begin(); it != Children.end(); it++ )
 	{
+		( *it )->setSelected(false);
 		( *it )->drop();
 	}
 	Children.clear();
@@ -213,60 +209,112 @@ IGUITreeViewNode* CGUITreeViewNode::getLastChild() const
 	}
 }
 
+IGUITreeViewNode* CGUITreeViewNode::getDeepestChild(bool onlyVisible)
+{
+	if( Children.empty() )
+		return this;
+	if ( onlyVisible && !getExpanded() )
+		return this;
+	core::list<CGUITreeViewNode*>::Iterator it = Children.getLast();
+	return (*it)->getDeepestChild(onlyVisible);
+}
+
 IGUITreeViewNode* CGUITreeViewNode::getPrevSibling() const
 {
-	core::list<CGUITreeViewNode*>::Iterator	itThis;
-	core::list<CGUITreeViewNode*>::Iterator	itOther;
-	CGUITreeViewNode*									other = 0;
-
 	if( Parent )
 	{
-		for( itThis = Parent->Children.begin(); itThis != Parent->Children.end(); itThis++ )
+		core::list<CGUITreeViewNode*>::Iterator	itPrev;
+		for( core::list<CGUITreeViewNode*>::Iterator it = Parent->Children.begin(); it != Parent->Children.end(); ++it )
 		{
-			if( this == *itThis )
+			if( this == *it )
 			{
-				if( itThis != Parent->Children.begin() )
+				if( it != Parent->Children.begin() )
 				{
-					other = *itOther;
+					return *itPrev;
 				}
 				break;
 			}
-			itOther = itThis;
+			itPrev = it;
 		}
 	}
-	return other;
+	return 0;
 }
 
 IGUITreeViewNode* CGUITreeViewNode::getNextSibling() const
 {
-	core::list<CGUITreeViewNode*>::Iterator	itThis;
-	CGUITreeViewNode*									other = 0;
-
 	if( Parent )
 	{
-		for( itThis = Parent->Children.begin(); itThis != Parent->Children.end(); itThis++ )
+		// Note: Slow.
+		for( core::list<CGUITreeViewNode*>::Iterator it = Parent->Children.begin(); it != Parent->Children.end(); ++it )
 		{
-			if( this == *itThis )
+			if( this == *it )
 			{
-				if( itThis != Parent->Children.getLast() )
+				if( it != Parent->Children.getLast() )
 				{
-					other = *( ++itThis );
+					return *( ++it );
 				}
 				break;
 			}
 		}
 	}
-	return other;
+	return 0;
 }
 
-IGUITreeViewNode* CGUITreeViewNode::getNextVisible() const
+u32 CGUITreeViewNode::countVisibleChildrenRecursive() const
+{
+	u32 result = Children.size();
+	if ( result > 0 )
+	{
+		const core::list<CGUITreeViewNode*>::ConstIterator itEnd = Children.end();
+		for ( core::list<CGUITreeViewNode*>::ConstIterator it = Children.begin(); it != itEnd; ++it )
+		{
+			const CGUITreeViewNode* node = (*it);
+			if ( node->Expanded )
+				result += node->countVisibleChildrenRecursive();
+		}
+	}
+	return result;
+}
+
+bool CGUITreeViewNode::getNextIterator(irr::core::array< irr::core::list<CGUITreeViewNode*>::Iterator >& iteratorStack, bool onlyVisible)
+{
+	if ( iteratorStack.empty() )
+		return false;
+
+	irr::core::list<CGUITreeViewNode*>::Iterator itEnd;	// Irrlicht just has 0 pointer in default iterator
+	irr::core::list<CGUITreeViewNode*>::Iterator& iterLast = iteratorStack.getLast();
+	if (iterLast != itEnd)
+	{
+		CGUITreeViewNode* node = (*iterLast);
+		if( !node->Children.empty() && (!onlyVisible || node->Expanded))
+		{
+			iteratorStack.push_back(node->Children.begin());
+			return true;
+		}
+
+		++iterLast;
+		if ( iterLast != itEnd)
+			return true;
+	}
+
+	while(1)
+	{
+		iteratorStack.erase(iteratorStack.size()-1);	// pop_back
+		if ( iteratorStack.empty() )
+			return false;
+		irr::core::list<CGUITreeViewNode*>::Iterator& parentLast = iteratorStack.getLast();
+		++parentLast;
+		if ( parentLast != itEnd )
+			return true;
+	}
+}
+
+IGUITreeViewNode* CGUITreeViewNode::getNextNode(bool onlyVisible) const
 {
 	IGUITreeViewNode*	next = 0;
-	IGUITreeViewNode*	node = 0;
+	const IGUITreeViewNode*	node = this;
 
-	node = const_cast<CGUITreeViewNode*>( this );
-
-	if( node->getExpanded() && node->hasChildren() )
+	if( (!onlyVisible || node->getExpanded()) && node->hasChildren() )
 	{
 		next = node->getFirstChild();
 	}
@@ -286,22 +334,52 @@ IGUITreeViewNode* CGUITreeViewNode::getNextVisible() const
 	return next;
 }
 
+//! Returns the previous node in tree before this node (if everything would be expanded)
+IGUITreeViewNode* CGUITreeViewNode::getPrevNode(bool onlyVisible, bool includeRoot) const
+{
+	if ( isRoot() )
+		return 0;
+
+	IGUITreeViewNode* prev = 0;
+	const IGUITreeViewNode*	node = this;
+
+	prev = node->getPrevSibling();
+
+	if ( !prev )
+	{
+		prev = node->getParent();
+		if ( prev && !includeRoot && prev->isRoot() )
+			return 0;
+		return prev;
+	}
+
+	if ( !prev->hasChildren() || (onlyVisible && !prev->getExpanded()) )
+		return prev;
+
+	IGUITreeViewNode* last = prev->getLastChild();
+	while ( last )
+	{
+		prev = last;
+		if ( !prev->hasChildren() || (onlyVisible && !prev->getExpanded()) )
+			return prev;
+		last = last->getLastChild();
+	}
+	return prev;
+}
+
 bool CGUITreeViewNode::deleteChild( IGUITreeViewNode* child )
 {
-	core::list<CGUITreeViewNode*>::Iterator	itChild;
-	bool	deleted = false;
-
-	for( itChild = Children.begin(); itChild != Children.end(); itChild++ )
+	for(core::list<CGUITreeViewNode*>::Iterator itChild = Children.begin(); itChild != Children.end(); ++itChild )
 	{
 		if( child == *itChild )
 		{
+			child->setSelected(false);
 			child->drop();
 			Children.erase( itChild );
-			deleted = true;
-			break;
+			return true;
 		}
 	}
-	return deleted;
+	return false;
 }
 
 bool CGUITreeViewNode::moveChildUp( IGUITreeViewNode* child )
@@ -358,6 +436,14 @@ bool CGUITreeViewNode::moveChildDown( IGUITreeViewNode* child )
 void CGUITreeViewNode::setExpanded( bool expanded )
 {
 	Expanded = expanded;
+	if ( !expanded && Owner )
+	{
+		// Checking in case we did hide a child here
+		if ( Owner->Selected && !Owner->Selected->isVisible() )
+			Owner->Selected = this;
+		if ( Owner->HoverSelected && !Owner->HoverSelected->isVisible() )
+			Owner->HoverSelected = 0;
+	}
 }
 
 void CGUITreeViewNode::setSelected( bool selected )
@@ -375,19 +461,14 @@ void CGUITreeViewNode::setSelected( bool selected )
 				Owner->Selected = 0;
 			}
 		}
+		if ( Owner->HoverSelected == this )
+			Owner->HoverSelected = 0;
 	}
 }
 
 bool CGUITreeViewNode::getSelected() const
 {
-	if( Owner )
-	{
-		return Owner->Selected == (IGUITreeViewNode*)this;
-	}
-	else
-	{
-		return false;
-	}
+	return Owner && Owner->getSelected() == this;
 }
 
 bool CGUITreeViewNode::isRoot() const
@@ -425,12 +506,14 @@ CGUITreeView::CGUITreeView(IGUIEnvironment* environment, IGUIElement* parent,
 	s32 id, core::rect<s32> rectangle, bool clip,
 	bool drawBack,bool scrollBarVertical, bool scrollBarHorizontal)
 	: IGUITreeView( environment, parent, id, rectangle ),
-	Root(0), Selected(0),
+	Root(0), Selected(0), HoverSelected(0),
 	ItemHeight( 0 ),
 	IndentWidth( 0 ),
 	TotalItemHeight( 0 ),
 	TotalItemWidth ( 0 ),
+	ScrollBarSize( 0 ),
 	Font( 0 ),
+	OverrideFont( 0 ),
 	IconFont( 0 ),
 	ScrollBarH( 0 ),
 	ScrollBarV( 0 ),
@@ -447,34 +530,34 @@ CGUITreeView::CGUITreeView(IGUIEnvironment* environment, IGUIElement* parent,
 #endif
 
 	IGUISkin* skin = Environment->getSkin();
-	s32 s = skin->getSize( EGDS_SCROLLBAR_SIZE );
+	ScrollBarSize = skin->getSize( EGDS_SCROLLBAR_SIZE );
 
 	if ( scrollBarVertical )
 	{
-		ScrollBarV = new CGUIScrollBar( false, Environment, this, 0,
-			core::rect<s32>(	RelativeRect.getWidth() - s,
-			0,
-			RelativeRect.getWidth(),
-			RelativeRect.getHeight() - (scrollBarHorizontal ? s : 0 )
-			),
-			!clip );
-		ScrollBarV->drop();
+		ScrollBarV = new CGUIScrollBar( false, Environment, this, -1,
+			core::rect<s32>(	RelativeRect.getWidth() - ScrollBarSize,
+								0,
+								RelativeRect.getWidth(),
+								RelativeRect.getHeight()  - (scrollBarHorizontal ? ScrollBarSize : 0)
+			), !clip );
 
+		ScrollBarV->setAlignment(EGUIA_LOWERRIGHT, EGUIA_LOWERRIGHT, EGUIA_UPPERLEFT, EGUIA_LOWERRIGHT);
 		ScrollBarV->setSubElement(true);
 		ScrollBarV->setPos( 0 );
-		ScrollBarV->grab();
 	}
 
 	if ( scrollBarHorizontal )
 	{
-		ScrollBarH = new CGUIScrollBar( true, Environment, this, 1,
-			core::rect<s32>( 0, RelativeRect.getHeight() - s, RelativeRect.getWidth() - s, RelativeRect.getHeight() ),
-			!clip );
-		ScrollBarH->drop();
+		ScrollBarH = new CGUIScrollBar( true, Environment, this, -1,
+			core::rect<s32>(	0,
+								RelativeRect.getHeight() - ScrollBarSize,
+								RelativeRect.getWidth() - (scrollBarVertical ? ScrollBarSize : 0),
+								RelativeRect.getHeight()
+			), !clip );
 
+		ScrollBarH->setAlignment(EGUIA_UPPERLEFT, EGUIA_LOWERRIGHT, EGUIA_LOWERRIGHT, EGUIA_LOWERRIGHT);
 		ScrollBarH->setSubElement(true);
 		ScrollBarH->setPos( 0 );
-		ScrollBarH->grab();
 	}
 
 	Root = new CGUITreeViewNode( this, 0 );
@@ -518,19 +601,50 @@ CGUITreeView::~CGUITreeView()
 	}
 }
 
+//! Sets another skin independent font.
+void CGUITreeView::setOverrideFont(IGUIFont* font)
+{
+	if (OverrideFont == font)
+		return;
+
+	if (OverrideFont)
+		OverrideFont->drop();
+
+	OverrideFont = font;
+
+	if (OverrideFont)
+		OverrideFont->grab();
+
+	recalculateItemHeight();
+}
+
+//! Gets the override font (if any)
+IGUIFont * CGUITreeView::getOverrideFont() const
+{
+	return OverrideFont;
+}
+
+//! Get the font which is used right now for drawing
+IGUIFont* CGUITreeView::getActiveFont() const
+{
+	if ( OverrideFont )
+		return OverrideFont;
+	IGUISkin* skin = Environment->getSkin();
+	if (skin)
+		return skin->getFont();
+	return 0;
+}
+
 void CGUITreeView::recalculateItemHeight()
 {
-	IGUISkin*		skin = Environment->getSkin();
-	IGUITreeViewNode*	node;
-
-	if( Font != skin->getFont() )
+	if( Font != getActiveFont() )
 	{
 		if( Font )
 		{
 			Font->drop();
 		}
 
-		Font = skin->getFont();
+		Font = getActiveFont();
 		ItemHeight = 0;
 
 		if( Font )
@@ -573,21 +687,110 @@ void CGUITreeView::recalculateItemHeight()
 		}
 	}
 
-	TotalItemHeight = 0;
+	TotalItemHeight = Root->countVisibleChildrenRecursive() * ItemHeight;	// could optimize more and only calculate when children got modified
 	TotalItemWidth = AbsoluteRect.getWidth() * 2;
-	node = Root->getFirstChild();
-	while( node )
-	{
-		TotalItemHeight += ItemHeight;
-		node = node->getNextVisible();
-	}
 
 	if ( ScrollBarV )
-		ScrollBarV->setMax( core::max_(0,TotalItemHeight - AbsoluteRect.getHeight()) );
+	{
+		s32 diffHor = TotalItemHeight - AbsoluteRect.getHeight();
+		if ( ScrollBarH )
+		{
+			diffHor += ScrollBarH->getAbsolutePosition().getHeight();
+		}
+		ScrollBarV->setMax( core::max_( 0, diffHor) );
+		ScrollBarV->setSmallStep( ItemHeight );
+	}
 
 	if ( ScrollBarH )
-		ScrollBarH->setMax( core::max_(0, TotalItemWidth - AbsoluteRect.getWidth()) );
+	{
+		s32 diffVert = TotalItemWidth - AbsoluteRect.getWidth();
+		if ( ScrollBarV )
+		{
+			// TODO: not sure yet if it needs handling
+		}
+		ScrollBarH->setMax( core::max_( 0, diffVert ) );
+		ScrollBarH->setSmallStep( ItemHeight );
+	}
+}
 
+void CGUITreeView::updateScrollBarSize(s32 size)
+{
+	if ( size != ScrollBarSize )
+	{
+		ScrollBarSize = size;
+
+		if ( ScrollBarV )
+		{
+			core::recti r(RelativeRect.getWidth() - ScrollBarSize, 0,
+			              RelativeRect.getWidth(), RelativeRect.getHeight() - (ScrollBarH ? ScrollBarSize : 0));
+			ScrollBarV->setRelativePosition(r);
+		}
+
+		if ( ScrollBarH )
+		{
+			core::recti r(0, RelativeRect.getHeight() - ScrollBarSize,
+			              RelativeRect.getWidth() - (ScrollBarV ? ScrollBarSize : 0), RelativeRect.getHeight());
+			ScrollBarH->setRelativePosition(r);
+		}
+	}
+}
+
+void CGUITreeView::scrollTo(IGUITreeViewNode* targetNode, irr::gui::EGUI_ALIGNMENT placement) const
+{
+	if ( !ScrollBarV || !targetNode || !targetNode->isVisible() || !ItemHeight || !TotalItemHeight)
+		return;
+
+	bool found = false;
+	irr::s32 itemTop = 0;
+	IGUITreeViewNode* node = Root->getFirstChild();
+	while( node && !found)
+	{
+		if ( node == targetNode )
+		{
+			found = true;
+		}
+		else
+		{
+			itemTop += ItemHeight;
+			node = node->getNextVisible();
+		}
+	}
+	if ( found )
+	{
+		s32 visibleTreeHeight = AbsoluteRect.getHeight();
+		if ( ScrollBarH )
+		{
+			visibleTreeHeight -= ScrollBarH->getAbsolutePosition().getHeight();
+		}
+
+		// Btw. don't care if position is outside scroll-bar range, scroll-bar clips
+		switch ( placement )
+		{
+			case EGUIA_UPPERLEFT:
+				ScrollBarV->setPos(itemTop);
+				break;
+			case EGUIA_LOWERRIGHT:
+				ScrollBarV->setPos(itemTop-(visibleTreeHeight-ItemHeight));
+				break;
+			case EGUIA_CENTER:
+				ScrollBarV->setPos(itemTop-(visibleTreeHeight-ItemHeight)/2);
+				break;
+			case EGUIA_SCALE: // lazy me re-used existing enum. What it means here is: only scroll when you have to and then in the direction it needs to
+			{
+				s32 oldPos = ScrollBarV->getPos();
+				s32 lowestVisiblePos = itemTop-(visibleTreeHeight-ItemHeight);
+				if ( oldPos > itemTop )
+				{
+					ScrollBarV->setPos(itemTop);
+				}
+				else if ( oldPos < lowestVisiblePos )
+				{
+					ScrollBarV->setPos(lowestVisiblePos);
+				}
+				break;
+			}
+		}
+	}
 }
 
 //! called if an event happened.
@@ -625,44 +828,34 @@ bool CGUITreeView::OnEvent( const SEvent &event )
 				{
 				case EMIE_MOUSE_WHEEL:
 					if ( ScrollBarV )
-						ScrollBarV->setPos( ScrollBarV->getPos() + (event.MouseInput.Wheel < 0 ? -1 : 1) * -10 );
+					{
+						const s32 scrollStep = ItemHeight*3;	// 3 lines seems to be usual step-size (at least on Windows).
+						ScrollBarV->setPos( ScrollBarV->getPos() + (event.MouseInput.Wheel < 0 ? 1 : -1) * scrollStep );
+					}
 					return true;
 					break;
 
 				case EMIE_LMOUSE_PRESSED_DOWN:
-
-					if (Environment->hasFocus(this) && !AbsoluteClippingRect.isPointInside(p) )
-					{
-						Environment->removeFocus(this);
-						return false;
-					}
-
-					if( Environment->hasFocus( this ) &&
-						(	( ScrollBarV && ScrollBarV->getAbsolutePosition().isPointInside( p ) && ScrollBarV->OnEvent( event ) ) ||
+					if( ( ScrollBarV && ScrollBarV->getAbsolutePosition().isPointInside( p ) && ScrollBarV->OnEvent( event ) ) ||
 						( ScrollBarH && ScrollBarH->getAbsolutePosition().isPointInside( p ) &&	ScrollBarH->OnEvent( event ) )
-						)
 						)
 					{
 						return true;
 					}
 
 					Selecting = true;
-					Environment->setFocus( this );
 					return true;
 					break;
 
 				case EMIE_LMOUSE_LEFT_UP:
-					if( Environment->hasFocus( this ) &&
-						(	( ScrollBarV && ScrollBarV->getAbsolutePosition().isPointInside( p ) && ScrollBarV->OnEvent( event ) ) ||
+					if( ( ScrollBarV && ScrollBarV->getAbsolutePosition().isPointInside( p ) && ScrollBarV->OnEvent( event ) ) ||
 						( ScrollBarH && ScrollBarH->getAbsolutePosition().isPointInside( p ) &&	ScrollBarH->OnEvent( event ) )
-						)
 						)
 					{
 						return true;
 					}
 
 					Selecting = false;
-					Environment->removeFocus( this );
 					mouseAction( event.MouseInput.X, event.MouseInput.Y );
 					return true;
 					break;
@@ -677,8 +870,176 @@ bool CGUITreeView::OnEvent( const SEvent &event )
 						}
 					}
 					break;
+
 				default:
 					break;
+				}
+			}
+			break;
+		case EET_KEY_INPUT_EVENT:
+			if (event.KeyInput.PressedDown && Selected)
+			{
+				IGUITreeViewNode* oldSelected = Selected;	// Careful - this can change also through hiding expansion in here
+
+				SEvent changeEvent;
+				changeEvent.EventType        = EET_GUI_EVENT;
+				changeEvent.GUIEvent.Caller  = this;
+				changeEvent.GUIEvent.Element = 0;
+
+				switch (event.KeyInput.Key)
+				{
+					case KEY_LEFT:
+					{
+						if ( Selected->hasChildren() && Selected->getExpanded())
+						{
+							Selected->setExpanded(false);
+							changeEvent.GUIEvent.EventType = EGET_TREEVIEW_NODE_EXPAND;
+							LastEventNode = Selected;
+							Parent->OnEvent( changeEvent );
+							LastEventNode = 0;
+						}
+						else
+						{
+							IGUITreeViewNode* parent = Selected->getParent();
+							if ( parent && !parent->isRoot() )
+							{
+								Selected = parent;
+							}
+						}
+						break;
+					}
+					case KEY_RIGHT:
+					{
+						if ( Selected->hasChildren() )
+						{
+							if ( Selected->getExpanded() )
+							{
+								IGUITreeViewNode* child = Selected->getFirstChild();
+								if ( child )
+								{
+									Selected = child;
+								}
+							}
+							else
+							{
+								Selected->setExpanded(true);
+								changeEvent.GUIEvent.EventType = EGET_TREEVIEW_NODE_COLLAPSE;
+								LastEventNode = Selected;
+								Parent->OnEvent( changeEvent );
+								LastEventNode = 0;
+							}
+						}
+						break;
+					}
+					case KEY_UP:
+					{
+						IGUITreeViewNode* n = Selected->getPrevNode(true);
+						if ( n )
+						{
+							n->setSelected(true);
+						}
+						break;
+					}
+					case KEY_DOWN:
+					{
+						IGUITreeViewNode* n = Selected->getNextNode(true);
+						if ( n )
+						{
+							n->setSelected(true);
+						}
+						break;
+					}
+					case KEY_HOME:
+					{
+						IGUITreeViewNode* firstNode = Root->getNextNode(true);
+						if ( firstNode )
+						{
+							firstNode->setSelected(true);
+						}
+						break;
+					}
+					case KEY_END:
+					{
+						IGUITreeViewNode* lastNode = Root->getDeepestChild(true);
+						if ( lastNode && lastNode != Root )
+						{
+							lastNode->setSelected(true);
+						}
+						break;
+					}
+					case KEY_PRIOR:
+					{
+						IGUITreeViewNode* last = Selected;
+						IGUITreeViewNode* next = 0;
+						s32 numItems = core::max_(getNumItemsDisplayed() - 1, 1);	// how many we try to scroll maximally
+						while (numItems > 0)
+						{
+							next = last->getPrevNode(true);
+							if ( !next )	// don't have so many? Just use as many as we got
+							{
+								break;
+							}
+							last = next;
+							--numItems;
+						}
+						if ( next )
+						{
+							next->setSelected(true);
+						}
+						else if ( last != Selected )
+						{
+							last->setSelected(true);
+						}
+						break;
+					}
+					case KEY_NEXT:
+					{
+						IGUITreeViewNode* last = Selected;
+						IGUITreeViewNode* next = 0;
+						s32 numItems = core::max_(getNumItemsDisplayed() - 1, 1);	// how many we try to scroll maximally
+						while (numItems > 0)
+						{
+							next = last->getNextNode(true);
+							if ( !next )	// don't have so many? Just use as many as we got
+							{
+								break;
+							}
+							last = next;
+							--numItems;
+						}
+						if ( next )
+						{
+							next->setSelected(true);
+						}
+						else if ( last != Selected )
+						{
+							last->setSelected(true);
+						}
+						break;
+					}
+					default:
+						break;
+				}
+				if( Parent && Selected != oldSelected )
+				{
+					if( oldSelected )
+					{
+						changeEvent.GUIEvent.EventType = EGET_TREEVIEW_NODE_DESELECT;
+						LastEventNode = oldSelected;
+						Parent->OnEvent( changeEvent );
+						LastEventNode = 0;
+					}
+					if( Selected )
+					{
+						scrollTo(Selected, EGUIA_SCALE);
+
+						changeEvent.GUIEvent.EventType = EGET_TREEVIEW_NODE_SELECT;
+						LastEventNode = Selected;
+						LastSelectTriggerEvent = event;
+						Parent->OnEvent( changeEvent );
+						LastEventNode = 0;
+					}
+					return true;
 				}
 			}
 			break;
@@ -694,13 +1055,10 @@ bool CGUITreeView::OnEvent( const SEvent &event )
 */
 void CGUITreeView::mouseAction( s32 xpos, s32 ypos, bool onlyHover /*= false*/ )
 {
-	IGUITreeViewNode*		oldSelected = Selected;
-	IGUITreeViewNode*		hitNode = 0;
-	s32						selIdx=-1;
-	s32						n;
-	IGUITreeViewNode*		node;
-	SEvent					event;
+	IGUITreeViewNode* oldSelected = Selected;	// Careful - this can change also through hiding expansion in here
+	s32	selIdx=-1;
 
+	SEvent event;
 	event.EventType			= EET_GUI_EVENT;
 	event.GUIEvent.Caller	= this;
 	event.GUIEvent.Element = 0;
@@ -709,14 +1067,15 @@ void CGUITreeView::mouseAction( s32 xpos, s32 ypos, bool onlyHover /*= false*/ )
 	ypos -= AbsoluteRect.UpperLeftCorner.Y;
 
 	// find new selected item.
-	if( ItemHeight != 0 && ScrollBarV )
+	s32 scrollBarVPos = ScrollBarV ? ScrollBarV->getPos() : 0;
+	if( ItemHeight != 0 )
 	{
-		selIdx = ( ( ypos - 1 ) + ScrollBarV->getPos() ) / ItemHeight;
+		selIdx = ( ( ypos - 1 ) + scrollBarVPos ) / ItemHeight;
 	}
 
-	hitNode = 0;
-	node = Root->getFirstChild();
-	n = 0;
+	IGUITreeViewNode* hitNode = 0;
+	IGUITreeViewNode* node = Root->getFirstChild();
+	s32	n = 0;
 	while( node )
 	{
 		if( selIdx == n )
@@ -728,9 +1087,18 @@ void CGUITreeView::mouseAction( s32 xpos, s32 ypos, bool onlyHover /*= false*/ )
 		++n;
 	}
 
+	s32 scrollBarHPos = ScrollBarH ? ScrollBarH->getPos() : 0;
+	xpos += scrollBarHPos; // correction for shift
+
 	if( hitNode && xpos > hitNode->getLevel() * IndentWidth )
 	{
-		Selected = hitNode;
+		if ( onlyHover )
+			HoverSelected = hitNode;
+		else
+		{
+			Selected = hitNode;
+			HoverSelected = 0;
+		}
 	}
 
 	if( hitNode && !onlyHover
@@ -740,31 +1108,28 @@ void CGUITreeView::mouseAction( s32 xpos, s32 ypos, bool onlyHover /*= false*/ )
 	{
 		hitNode->setExpanded( !hitNode->getExpanded() );
 
-		// post expand/collaps news
+		// post expand/collapse news
 		if( hitNode->getExpanded() )
 		{
 			event.GUIEvent.EventType = EGET_TREEVIEW_NODE_EXPAND;
 		}
 		else
 		{
-			event.GUIEvent.EventType = EGET_TREEVIEW_NODE_COLLAPS;
+			event.GUIEvent.EventType = EGET_TREEVIEW_NODE_COLLAPSE;
 		}
 		LastEventNode = hitNode;
 		Parent->OnEvent( event );
 		LastEventNode = 0;
 	}
 
-	if( Selected && !Selected->isVisible() )
-	{
-		Selected = 0;
-	}
-
 	// post selection news
 
-	if( Parent && !onlyHover && Selected != oldSelected )
+	if( Parent && Selected != oldSelected )
 	{
 		if( oldSelected )
 		{
+			// Note: It might also be lost when deleting nodes
+			//       Not sure yet if/how to handle those. Or maybe this event isn't even necessary
 			event.GUIEvent.EventType = EGET_TREEVIEW_NODE_DESELECT;
 			LastEventNode = oldSelected;
 			Parent->OnEvent( event );
@@ -774,12 +1139,12 @@ void CGUITreeView::mouseAction( s32 xpos, s32 ypos, bool onlyHover /*= false*/ )
 		{
 			event.GUIEvent.EventType = EGET_TREEVIEW_NODE_SELECT;
 			LastEventNode = Selected;
+			LastSelectTriggerEvent = event;
 			Parent->OnEvent( event );
 			LastEventNode = 0;
 		}
 	}
 }
-
 
 //! draws the element and its children
 void CGUITreeView::draw()
@@ -789,9 +1154,11 @@ void CGUITreeView::draw()
 		return;
 	}
 
-	recalculateItemHeight(); // if the font changed
-
 	IGUISkin* skin = Environment->getSkin();
+
+	updateScrollBarSize(skin->getSize(EGDS_SCROLLBAR_SIZE));
+	recalculateItemHeight();
+
 	irr::video::IVideoDriver* driver = Environment->getVideoDriver();
 
 	core::rect<s32>* clipRect = 0;
@@ -801,48 +1168,44 @@ void CGUITreeView::draw()
 	}
 
 	// draw background
+
 	core::rect<s32> frameRect( AbsoluteRect );
 
 	if( DrawBack )
 	{
-		driver->draw2DRectangle( skin->getColor( EGDC_3D_HIGH_LIGHT ), frameRect,
-			clipRect );
+		driver->draw2DRectangle( skin->getColor( EGDC_3D_HIGH_LIGHT ), frameRect, clipRect );
 	}
 
 	// draw the border
+
 	frameRect.LowerRightCorner.Y = frameRect.UpperLeftCorner.Y + 1;
-	driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), frameRect,
-		clipRect );
+	driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), frameRect, clipRect );
 
 	frameRect.LowerRightCorner.Y = AbsoluteRect.LowerRightCorner.Y;
 	frameRect.LowerRightCorner.X = frameRect.UpperLeftCorner.X + 1;
-	driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), frameRect,
-		clipRect );
+	driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), frameRect, clipRect );
 
 	frameRect = AbsoluteRect;
-	frameRect.UpperLeftCorner.X = frameRect.LowerRightCorner.X - 1;
-	driver->draw2DRectangle( skin->getColor( EGDC_3D_HIGH_LIGHT ), frameRect,
-		clipRect );
+	frameRect.UpperLeftCorner.X  = frameRect.LowerRightCorner.X - 1;
+	driver->draw2DRectangle( skin->getColor( EGDC_3D_HIGH_LIGHT ), frameRect, clipRect );
 
 	frameRect = AbsoluteRect;
-	frameRect.UpperLeftCorner.Y = AbsoluteRect.LowerRightCorner.Y - 1;
+	frameRect.UpperLeftCorner.Y  = AbsoluteRect.LowerRightCorner.Y - 1;
 	frameRect.LowerRightCorner.Y = AbsoluteRect.LowerRightCorner.Y;
-	driver->draw2DRectangle( skin->getColor( EGDC_3D_HIGH_LIGHT ), frameRect,
-		clipRect );
-
+	driver->draw2DRectangle( skin->getColor( EGDC_3D_HIGH_LIGHT ), frameRect, clipRect );
 
 	// draw items
 
 	core::rect<s32> clientClip( AbsoluteRect );
-	clientClip.UpperLeftCorner.Y += 1;
-	clientClip.UpperLeftCorner.X += 1;
-	clientClip.LowerRightCorner.X = AbsoluteRect.LowerRightCorner.X;
+	clientClip.UpperLeftCorner.X  += 1;
+	clientClip.UpperLeftCorner.Y  += 1;
+	clientClip.LowerRightCorner.X  = AbsoluteRect.LowerRightCorner.X;
 	clientClip.LowerRightCorner.Y -= 1;
 
 	if ( ScrollBarV )
-		clientClip.LowerRightCorner.X -= skin->getSize( EGDS_SCROLLBAR_SIZE );
+		clientClip.LowerRightCorner.X -= ScrollBarSize;
 	if ( ScrollBarH )
-		clientClip.LowerRightCorner.Y -= skin->getSize( EGDS_SCROLLBAR_SIZE );
+		clientClip.LowerRightCorner.Y -= ScrollBarSize;
 
 	if( clipRect )
 	{
@@ -850,38 +1213,50 @@ void CGUITreeView::draw()
 	}
 
 	frameRect = AbsoluteRect;
-	frameRect.LowerRightCorner.X = AbsoluteRect.LowerRightCorner.X - skin->getSize( EGDS_SCROLLBAR_SIZE );
+	frameRect.LowerRightCorner.X = AbsoluteRect.LowerRightCorner.X - ScrollBarSize;
 	frameRect.LowerRightCorner.Y = AbsoluteRect.UpperLeftCorner.Y + ItemHeight;
 
 	if ( ScrollBarV )
 	{
-		frameRect.UpperLeftCorner.Y -= ScrollBarV->getPos();
+		frameRect.UpperLeftCorner.Y  -= ScrollBarV->getPos();
 		frameRect.LowerRightCorner.Y -= ScrollBarV->getPos();
 	}
 
-	if ( ScrollBarH )
+	NodeIteratorStack.set_used(0);
+	if ( Root->hasChildren() && Root->getExpanded() )
+		NodeIteratorStack.push_back(Root->Children.begin());
+	while( !NodeIteratorStack.empty() )
 	{
-		frameRect.UpperLeftCorner.X -= ScrollBarH->getPos();
-		frameRect.LowerRightCorner.X -= ScrollBarH->getPos();
-	}
+		CGUITreeViewNode* node = *NodeIteratorStack.getLast();
 
-	IGUITreeViewNode* node = Root->getFirstChild();
-	while( node )
-	{
-		frameRect.UpperLeftCorner.X = AbsoluteRect.UpperLeftCorner.X + 1 + node->getLevel() * IndentWidth;
+		const bool isSelected = node == getSelected();
+		const s32 level = (s32)NodeIteratorStack.size();	// faster than node->getLevel()
+		frameRect.UpperLeftCorner.X = AbsoluteRect.UpperLeftCorner.X + 1 + level * IndentWidth;
+		if ( ScrollBarH )
+		{
+			frameRect.UpperLeftCorner.X  -= ScrollBarH->getPos();
+		}
 
 		if( frameRect.LowerRightCorner.Y >= AbsoluteRect.UpperLeftCorner.Y
 			&& frameRect.UpperLeftCorner.Y <= AbsoluteRect.LowerRightCorner.Y )
 		{
-			if( node == Selected )
+			if( isSelected )
 			{
-				driver->draw2DRectangle( skin->getColor( EGDC_HIGH_LIGHT ), frameRect, &clientClip );
+				// selection box beginning from far left
+				core::rect<s32> copyFrameRect( frameRect ); // local copy to keep original untouched
+				copyFrameRect.UpperLeftCorner.X = AbsoluteRect.UpperLeftCorner.X + 1;
+				driver->draw2DRectangle( skin->getColor( EGDC_HIGH_LIGHT ), copyFrameRect, &clientClip );
 			}
+
+			irr::video::SColor textCol = isEnabled() ?
+											( isSelected ? skin->getColor(EGDC_HIGH_LIGHT_TEXT) : skin->getColor(EGDC_BUTTON_TEXT) )
+											: skin->getColor(EGDC_GRAY_TEXT);
 
 			if( node->hasChildren() )
 			{
 				core::rect<s32> rc;
 				core::rect<s32> expanderRect;
+				irr::video::SColor boxCol = skin->getColor( EGDC_3D_DARK_SHADOW );
 
 				expanderRect.UpperLeftCorner.X = frameRect.UpperLeftCorner.X - IndentWidth + 2;
 				expanderRect.UpperLeftCorner.Y = frameRect.UpperLeftCorner.Y + ( ( frameRect.getHeight() - ( IndentWidth - 4 ) ) >> 1 );
@@ -893,40 +1268,35 @@ void CGUITreeView::draw()
 				rc.UpperLeftCorner.Y = expanderRect.UpperLeftCorner.Y;
 				rc.LowerRightCorner.X = expanderRect.LowerRightCorner.X;
 				rc.LowerRightCorner.Y = rc.UpperLeftCorner.Y + 1;
-				driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc,
-					clipRect );
+				driver->draw2DRectangle( boxCol, rc, clipRect );
 
 				// box left line
 				rc.UpperLeftCorner.X = expanderRect.UpperLeftCorner.X;
 				rc.UpperLeftCorner.Y = expanderRect.UpperLeftCorner.Y;
 				rc.LowerRightCorner.X = rc.UpperLeftCorner.X + 1;
 				rc.LowerRightCorner.Y = expanderRect.LowerRightCorner.Y;
-				driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc,
-					clipRect );
+				driver->draw2DRectangle( boxCol, rc, clipRect );
 
 				// box right line
 				rc.UpperLeftCorner.X = expanderRect.LowerRightCorner.X - 1;
 				rc.UpperLeftCorner.Y = expanderRect.UpperLeftCorner.Y;
 				rc.LowerRightCorner.X = rc.UpperLeftCorner.X + 1;
 				rc.LowerRightCorner.Y = expanderRect.LowerRightCorner.Y;
-				driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc,
-					clipRect );
+				driver->draw2DRectangle( boxCol, rc, clipRect );
 
 				// box bottom line
 				rc.UpperLeftCorner.X = expanderRect.UpperLeftCorner.X;
 				rc.UpperLeftCorner.Y = expanderRect.LowerRightCorner.Y - 1;
 				rc.LowerRightCorner.X = expanderRect.LowerRightCorner.X;
 				rc.LowerRightCorner.Y = rc.UpperLeftCorner.Y + 1;
-				driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc,
-					clipRect );
+				driver->draw2DRectangle( boxCol, rc, clipRect );
 
 				// horizontal '-' line
 				rc.UpperLeftCorner.X = expanderRect.UpperLeftCorner.X + 2;
 				rc.UpperLeftCorner.Y = expanderRect.UpperLeftCorner.Y + ( expanderRect.getHeight() >> 1 );
 				rc.LowerRightCorner.X = rc.UpperLeftCorner.X + expanderRect.getWidth() - 4;
 				rc.LowerRightCorner.Y = rc.UpperLeftCorner.Y + 1;
-				driver->draw2DRectangle( skin->getColor( EGDC_BUTTON_TEXT ), rc,
-					clipRect );
+				driver->draw2DRectangle( textCol, rc, clipRect );
 
 				if( !node->getExpanded() )
 				{
@@ -935,8 +1305,7 @@ void CGUITreeView::draw()
 					rc.UpperLeftCorner.Y = expanderRect.UpperLeftCorner.Y + 2;
 					rc.LowerRightCorner.X = rc.UpperLeftCorner.X + 1;
 					rc.LowerRightCorner.Y = rc.UpperLeftCorner.Y + expanderRect.getHeight() - 4;
-					driver->draw2DRectangle( skin->getColor( EGDC_BUTTON_TEXT ), rc,
-						clipRect );
+					driver->draw2DRectangle( textCol, rc, clipRect );
 				}
 			}
 
@@ -944,10 +1313,6 @@ void CGUITreeView::draw()
 
 			if( Font )
 			{
-				EGUI_DEFAULT_COLOR textCol = EGDC_GRAY_TEXT;
-				if ( isEnabled() )
-					textCol = ( node == Selected ) ? EGDC_HIGH_LIGHT_TEXT : EGDC_BUTTON_TEXT;
-
 				s32 iconWidth = 0;
 				for( s32 n = 0; n < 2; ++n )
 				{
@@ -957,7 +1322,7 @@ void CGUITreeView::draw()
 						|| ( !ImageLeftOfIcon && n == 1 ) ) )
 					{
 						index = node->getSelectedImageIndex();
-						if( node != Selected || index < 0 )
+						if( !isSelected || index < 0 )
 						{
 							index = node->getImageIndex();
 						}
@@ -970,22 +1335,22 @@ void CGUITreeView::draw()
 						iconWidth += ImageList->getImageSize().Width + 3;
 						textRect.UpperLeftCorner.X += ImageList->getImageSize().Width + 3;
 					}
-					else if( ( IconFont && reinterpret_cast<CGUITreeViewNode*>( node )->Icon.size() )
+					else if( ( IconFont && node->Icon.size() )
 						&& ( ( ImageLeftOfIcon && n == 1 )
 						|| ( !ImageLeftOfIcon && n == 0 ) ) )
 					{
-						IconFont->draw( node->getIcon(), textRect, skin->getColor(textCol), false, true, &clientClip );
+						IconFont->draw( node->getIcon(), textRect, textCol, false, true, &clientClip );
 						iconWidth += IconFont->getDimension( node->getIcon() ).Width + 3;
 						textRect.UpperLeftCorner.X += IconFont->getDimension( node->getIcon() ).Width + 3;
 					}
 				}
 
-				Font->draw( node->getText(), textRect, skin->getColor(textCol), false, true, &clientClip );
+				Font->draw( node->Text, textRect, textCol, false, true, &clientClip );
 
 				textRect.UpperLeftCorner.X -= iconWidth;
 			}
 
-			// draw the lines if neccessary
+			// draw the lines if necessary
 			if( LinesVisible )
 			{
 				core::rect<s32> rc;
@@ -1002,8 +1367,7 @@ void CGUITreeView::draw()
 					rc.LowerRightCorner.X = frameRect.UpperLeftCorner.X - 2;
 				}
 				rc.LowerRightCorner.Y = rc.UpperLeftCorner.Y + 1;
-				driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc,
-					clipRect );
+				driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc, clipRect );
 
 				if( node->getParent() != Root )
 				{
@@ -1017,20 +1381,18 @@ void CGUITreeView::draw()
 						rc.UpperLeftCorner.Y = frameRect.UpperLeftCorner.Y - ( frameRect.getHeight() >> 1 );
 					}
 					rc.LowerRightCorner.X = rc.UpperLeftCorner.X + 1;
-					driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc,
-						clipRect );
+					driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc, clipRect );
 
 					// the vertical lines of all parents
 					IGUITreeViewNode* nodeTmp = node->getParent();
 					rc.UpperLeftCorner.Y = frameRect.UpperLeftCorner.Y - ( frameRect.getHeight() >> 1 );
-					for( s32 n = 0; n < node->getLevel() - 2; ++n )
+					for( s32 n = 0; n < level - 2; ++n )
 					{
 						rc.UpperLeftCorner.X -= IndentWidth;
 						rc.LowerRightCorner.X -= IndentWidth;
 						if( nodeTmp != nodeTmp->getParent()->getLastChild() )
 						{
-							driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc,
-								clipRect );
+							driver->draw2DRectangle( skin->getColor( EGDC_3D_SHADOW ), rc, clipRect );
 						}
 						nodeTmp = nodeTmp->getParent();
 					}
@@ -1041,7 +1403,7 @@ void CGUITreeView::draw()
 		frameRect.UpperLeftCorner.Y += ItemHeight;
 		frameRect.LowerRightCorner.Y += ItemHeight;
 
-		node = node->getNextVisible();
+		CGUITreeViewNode::getNextIterator(NodeIteratorStack, true);
 	}
 
 	IGUIElement::draw();
@@ -1092,6 +1454,31 @@ void CGUITreeView::setImageList( IGUIImageList* imageList )
 			ItemHeight = ImageList->getImageSize().Height + 1;
 		}
 	}
+}
+
+//! Access the vertical scrollbar
+IGUIScrollBar* CGUITreeView::getVerticalScrollBar() const
+{
+	return ScrollBarV;
+}
+
+//! Access the horizontal scrollbar
+IGUIScrollBar* CGUITreeView::getHorizontalScrollBar() const
+{
+	return ScrollBarH;
+}
+
+irr::s32 CGUITreeView::getNumItemsDisplayed() const
+{
+	if ( !ItemHeight )
+		return 0;
+
+	s32 h = AbsoluteRect.getHeight();
+	if ( ScrollBarH )
+	{
+		h -= ScrollBarH->getAbsolutePosition().getHeight();
+	}
+	return h / ItemHeight;
 }
 
 } // end namespace gui

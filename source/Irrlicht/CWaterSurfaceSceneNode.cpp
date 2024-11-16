@@ -2,6 +2,8 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
+#include "IrrCompileConfig.h"
+#ifdef _IRR_COMPILE_WITH_WATER_SURFACE_SCENENODE_
 #include "CWaterSurfaceSceneNode.h"
 #include "ISceneManager.h"
 #include "IMeshManipulator.h"
@@ -28,7 +30,7 @@ CWaterSurfaceSceneNode::CWaterSurfaceSceneNode(f32 waveHeight, f32 waveSpeed, f3
 	setDebugName("CWaterSurfaceSceneNode");
 	#endif
 
-	setMesh(mesh);
+	setMesh(mesh, true);
 }
 
 
@@ -72,9 +74,9 @@ void CWaterSurfaceSceneNode::OnAnimate(u32 timeMs)
 }
 
 
-void CWaterSurfaceSceneNode::setMesh(IMesh* mesh)
+void CWaterSurfaceSceneNode::setMesh(IMesh* mesh, bool copyMeshMaterials)
 {
-	CMeshSceneNode::setMesh(mesh);
+	CMeshSceneNode::setMesh(mesh, copyMeshMaterials);
 	if (!mesh)
 		return;
 	if (OriginalMesh)
@@ -135,3 +137,4 @@ f32 CWaterSurfaceSceneNode::addWave(const core::vector3df &source, f32 time) con
 } // end namespace scene
 } // end namespace irr
 
+#endif // _IRR_COMPILE_WITH_WATER_SURFACE_SCENENODE_
